@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+  <head>
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var storedFetch = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return storedFetch || originalFetch;
+            },
+            set: function(val) {
+              storedFetch = val;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flow Prompt Forge</title>
+    <meta name="description" content="Gerador de prompts para Google Flow com 3 agentes especializados (POV, UGC, Movimento), consistência de produto, conformidade TikTok Shop e padronização ultra realista." />
+    <meta property="og:title" content="Flow Prompt Forge" />
+    <meta property="og:description" content="Gerador de prompts para Google Flow com 3 agentes especializados (POV, UGC, Movimento), consistência de produto, conformidade TikTok Shop e padronização ultra realista." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-neutral-950 text-neutral-100 antialiased min-h-screen selection:bg-amber-500/30 selection:text-amber-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
