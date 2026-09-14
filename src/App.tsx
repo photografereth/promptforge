@@ -106,10 +106,13 @@ export default function App() {
   const [isEnhancing, setIsEnhancing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Reference images state for Product and Character
+  // Reference images state for Product, Character, and Scenes
   const [mediaState, setMediaState] = useState<ReferenceMediaState>({
     productImage: null,
     characterImage: null,
+    productImages: [],
+    characterImages: [],
+    sceneImages: [],
   });
 
   // States for Video and Image

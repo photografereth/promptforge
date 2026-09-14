@@ -25,8 +25,11 @@ export interface ReferenceImageItem {
 }
 
 export interface ReferenceMediaState {
-  productImage: ReferenceImageItem | null;
-  characterImage: ReferenceImageItem | null;
+  productImage?: ReferenceImageItem | null;
+  characterImage?: ReferenceImageItem | null;
+  productImages: ReferenceImageItem[];
+  characterImages: ReferenceImageItem[];
+  sceneImages?: ReferenceImageItem[];
 }
 
 export interface TikTokComplianceInfo {

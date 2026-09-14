@@ -370,18 +370,34 @@ app.post("/api/analyze-references", async (req, res) => {
   const {
     productImage,
     characterImage,
+    productImages = [],
+    characterImages = [],
+    sceneImages = [],
     agent = "ugc",
     mode = "video",
     existingProduct = {},
     existingCharacter = {},
   } = req.body;
 
-  const parsedProduct = parseImageData(productImage);
-  const parsedCharacter = parseImageData(characterImage);
+  // Gather and parse all product images (support both array and single field)
+  const rawProducts = Array.isArray(productImages) && productImages.length > 0 
+    ? productImages 
+    : (productImage ? [productImage] : []);
+  const parsedProducts = rawProducts.map(parseImageData).filter(Boolean);
 
-  if (!parsedProduct && !parsedCharacter) {
+  // Gather and parse all character images
+  const rawCharacters = Array.isArray(characterImages) && characterImages.length > 0 
+    ? characterImages 
+    : (characterImage ? [characterImage] : []);
+  const parsedCharacters = rawCharacters.map(parseImageData).filter(Boolean);
+
+  // Gather and parse all scene / moodboard images
+  const rawScenes = Array.isArray(sceneImages) ? sceneImages : [];
+  const parsedScenes = rawScenes.map(parseImageData).filter(Boolean);
+
+  if (parsedProducts.length === 0 && parsedCharacters.length === 0 && parsedScenes.length === 0) {
     return res.status(400).json({
-      error: "Pelo menos uma imagem de referência (produto ou personagem) deve ser enviada para análise.",
+      error: "Envie pelo menos uma imagem de referência (produto, personagem ou cenário) para análise.",
     });
   }
 
@@ -390,22 +406,55 @@ app.post("/api/analyze-references", async (req, res) => {
 
     const parts: any[] = [];
 
-    if (parsedProduct) {
+    // Add product images
+    if (parsedProducts.length > 0) {
       parts.push({
-        inlineData: {
-          mimeType: parsedProduct.mimeType,
-          data: parsedProduct.data,
-        },
+        text: `[REFERÊNCIAS VISUAIS DO PRODUTO: ${parsedProducts.length} foto(s) fornecida(s). Analise todos os ângulos, embalagem, rótulo e textura física]:`,
       });
+      for (const prod of parsedProducts) {
+        if (prod) {
+          parts.push({
+            inlineData: {
+              mimeType: prod.mimeType,
+              data: prod.data,
+            },
+          });
+        }
+      }
     }
 
-    if (parsedCharacter) {
+    // Add character images
+    if (parsedCharacters.length > 0) {
       parts.push({
-        inlineData: {
-          mimeType: parsedCharacter.mimeType,
-          data: parsedCharacter.data,
-        },
+        text: `[REFERÊNCIAS VISUAIS DA MODELO / PERSONAGEM: ${parsedCharacters.length} foto(s) fornecida(s). Trave traços faciais, tom de pele, cabelo, vestimenta e expressão]:`,
       });
+      for (const char of parsedCharacters) {
+        if (char) {
+          parts.push({
+            inlineData: {
+              mimeType: char.mimeType,
+              data: char.data,
+            },
+          });
+        }
+      }
+    }
+
+    // Add scene / moodboard images
+    if (parsedScenes.length > 0) {
+      parts.push({
+        text: `[REFERÊNCIAS VISUAIS DE CENÁRIO / AMBIENTAÇÃO / ILUMINAÇÃO: ${parsedScenes.length} foto(s) fornecida(s). Incorpore a estética espacial, paleta de cores e iluminação]:`,
+      });
+      for (const sc of parsedScenes) {
+        if (sc) {
+          parts.push({
+            inlineData: {
+              mimeType: sc.mimeType,
+              data: sc.data,
+            },
+          });
+        }
+      }
     }
 
     const agentContext =
@@ -417,9 +466,10 @@ app.post("/api/analyze-references", async (req, res) => {
 
     const promptInstructions = `Você é um diretor de cena, especialista em computação visual e estrategista sênior de criativos para TikTok Shop com maestria no Google Flow (Veo 3 para vídeo ultra realista e Nano Banana para imagem).
 
-Você recebeu imagens de referência para ancorar consistência absoluta entre cortes e cenas:
-${parsedProduct ? "- IMAGEM 1 (PRODUTO): Analise minuciosamente o produto físico (formato exato, tipo de embalagem/frasco, tampa, relevo, cores precisas, rótulo/tipografia, textura do líquido/creme/material, reflexos de vidro/plástico/metal)." : ""}
-${parsedCharacter ? `- IMAGEM ${parsedProduct ? "2" : "1"} (PERSONAGEM / MODELO): Analise minuciosamente os traços da pessoa para garantir que a mesma modelo seja reproduzida com total fidelidade em todas as cenas (gênero, idade aparente, tom de pele, traços faciais marcantes, olhos, nariz, sorriso, tipo/cor/corte de cabelo, estilo e cores de vestimenta, expressão característica).` : ""}
+Você recebeu ${parsedProducts.length + parsedCharacters.length + parsedScenes.length} imagens de referência para ancorar consistência absoluta entre cortes e cenas:
+${parsedProducts.length > 0 ? `- PRODUTO (${parsedProducts.length} referências): Analise minuciosamente o produto físico em todas as imagens fornecidas (formato exato, tipo de embalagem/frasco, tampa, relevo, cores precisas, rótulo/tipografia, textura do líquido/creme/material, reflexos de vidro/plástico/metal).` : ""}
+${parsedCharacters.length > 0 ? `- PERSONAGEM / MODELO (${parsedCharacters.length} referências): Analise minuciosamente os traços da pessoa para garantir que a mesma modelo seja reproduzida com total fidelidade em todas as cenas (gênero, idade aparente, tom de pele, traços faciais marcantes, olhos, nariz, sorriso, tipo/cor/corte de cabelo, estilo e cores de vestimenta, expressão característica).` : ""}
+${parsedScenes.length > 0 ? `- CENÁRIO / AMBIENTE (${parsedScenes.length} referências): Analise o espaço, iluminação, paleta de cores e atmosfera do ambiente para guiar o cenário da cena.` : ""}
 
 Contexto de Direção:
 1. Agente Selecionado: ${agentContext}
@@ -495,7 +545,7 @@ Retorne ESTRITAMENTE um JSON puro válido no seguinte formato exato (sem markdow
 
     // Fallback heuristic response
     const fallbackProduct = {
-      nome: existingProduct?.nome || (parsedProduct ? "Produto de Referência Identificado" : "Produto TikTok Shop"),
+      nome: existingProduct?.nome || (parsedProducts.length > 0 ? "Produto de Referência Identificado" : "Produto TikTok Shop"),
       categoria: existingProduct?.categoria || "E-commerce & Beleza",
       caracteristicasVisuais:
         existingProduct?.caracteristicasVisuais ||
@@ -508,7 +558,7 @@ Retorne ESTRITAMENTE um JSON puro válido no seguinte formato exato (sem markdow
     const fallbackCharacter = {
       nomeOuDescricao:
         existingCharacter?.nomeOuDescricao ||
-        (parsedCharacter ? "Modelo/Criador de Referência (~25 anos)" : "Criador autêntico de conteúdo"),
+        (parsedCharacters.length > 0 ? "Modelo/Criador de Referência (~25 anos)" : "Criador autêntico de conteúdo"),
       caracteristicasFisicas:
         existingCharacter?.caracteristicasFisicas ||
         "Traços faciais naturais com pele bem cuidada, expressão comunicativa e olhar direto para a câmera",
@@ -518,7 +568,7 @@ Retorne ESTRITAMENTE um JSON puro válido no seguinte formato exato (sem markdow
     };
 
     const fallbackScene = {
-      sujeito: parsedCharacter
+      sujeito: parsedCharacters.length > 0
         ? `${fallbackCharacter.nomeOuDescricao} interagindo de forma autêntica com ${fallbackProduct.nome}`
         : `Mãos do criador apresentando ${fallbackProduct.nome} em plano próximo`,
       acao:

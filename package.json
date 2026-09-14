@@ -1,7 +1,7 @@
 {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
+  "name": "flow-prompt-forge",
+  "description": "Gerador de prompts profissionais para Google Flow (Veo 3 & Nano Banana) com 3 Agentes TikTok Shop, Ancoragem Multimodal de Produto e Padronização Ultra Realista.",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
