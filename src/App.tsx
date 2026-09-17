@@ -16,6 +16,8 @@ import { MoreDetailsAccordion } from './components/MoreDetailsAccordion';
 import { PromptOutput } from './components/PromptOutput';
 import { PreferencesModal } from './components/PreferencesModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
+import { LandingPage } from './components/LandingPage';
+import { CheckoutModal } from './components/CheckoutModal';
 import {
   AppMode,
   AgentType,
@@ -118,6 +120,17 @@ export default function App() {
   // States for Video and Image
   const [videoState, setVideoState] = useState<VideoPromptState>(initialVideoState);
   const [imageState, setImageState] = useState<ImagePromptState>(initialImageState);
+
+  // View Routing & Access Control
+  const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
+  const [checkoutPlan, setCheckoutPlan] = useState<'monthly' | 'annual' | null>(null);
+  const [isLicensed, setIsLicensed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('flow_prompt_forge_licensed') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // More details accordion (collapsed by default)
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
@@ -653,12 +666,78 @@ export default function App() {
   const activeProduct = mode === 'video' ? videoState.product : imageState.product;
   const activeCharacter = mode === 'video' ? videoState.character : imageState.character;
 
+  // 1. Landing Page View
+  if (currentView === 'landing') {
+    return (
+      <>
+        <LandingPage
+          onEnterApp={() => setCurrentView('app')}
+          onSelectPlan={(plan) => setCheckoutPlan(plan)}
+        />
+        <CheckoutModal
+          isOpen={checkoutPlan !== null}
+          plan={checkoutPlan || 'annual'}
+          onClose={() => setCheckoutPlan(null)}
+          onSuccess={() => {
+            setIsLicensed(true);
+            try {
+              localStorage.setItem('flow_prompt_forge_licensed', 'true');
+            } catch {
+              // ignore
+            }
+            setCheckoutPlan(null);
+            setCurrentView('app');
+          }}
+        />
+      </>
+    );
+  }
+
+  // 2. Application Workbench View
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
+      {/* Top Access & License Status Ribbon */}
+      <div className="border-b border-neutral-800/80 bg-neutral-900/90 px-4 py-1.5 text-xs text-neutral-400">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-300">
+              {isLicensed ? (
+                <span className="text-emerald-400 font-bold">[ LICENÇA PESSOAL ATIVA • SESSÃO PROTEGIDA ]</span>
+              ) : (
+                <span className="text-amber-400 font-bold">[ MODO DEMONSTRAÇÃO • SESSÃO LOCAL ]</span>
+              )}
+            </span>
+            <span className="hidden md:inline font-mono text-[10px] text-neutral-400">
+              VEO 3 & NANO BANANA • 3 AGENTES TIKTOK SHOP
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {!isLicensed && (
+              <button
+                type="button"
+                onClick={() => setCheckoutPlan('annual')}
+                className="font-mono text-[11px] font-bold text-amber-400 hover:text-amber-300 uppercase underline cursor-pointer"
+              >
+                [ ASSINAR LICENÇA EXCLUSIVA ]
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCurrentView('landing')}
+              className="font-mono text-[11px] text-neutral-300 hover:text-white uppercase transition-colors cursor-pointer"
+            >
+              [ VER LANDING PAGE & PLANOS ]
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <Header
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenLanding={() => setCurrentView('landing')}
         historyCount={history.length}
         hasAutoPreferences={preferences.autoApply}
       />
@@ -821,6 +900,22 @@ export default function App() {
         onLoadItem={handleLoadHistoryItem}
         onDeleteItem={handleDeleteHistoryItem}
         onClearHistory={handleClearAllHistory}
+      />
+
+      {/* Checkout / Subscription Modal */}
+      <CheckoutModal
+        isOpen={checkoutPlan !== null}
+        plan={checkoutPlan || 'annual'}
+        onClose={() => setCheckoutPlan(null)}
+        onSuccess={() => {
+          setIsLicensed(true);
+          try {
+            localStorage.setItem('flow_prompt_forge_licensed', 'true');
+          } catch {
+            // ignore
+          }
+          setCheckoutPlan(null);
+        }}
       />
     </div>
   );

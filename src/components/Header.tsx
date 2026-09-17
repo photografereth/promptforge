@@ -4,6 +4,7 @@ import { Settings, History, Sparkles, Clapperboard } from 'lucide-react';
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenHistory: () => void;
+  onOpenLanding?: () => void;
   historyCount: number;
   hasAutoPreferences: boolean;
 }
@@ -11,6 +12,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenHistory,
+  onOpenLanding,
   historyCount,
   hasAutoPreferences,
 }) => {
@@ -42,6 +44,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right actions */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {onOpenLanding && (
+            <button
+              type="button"
+              onClick={onOpenLanding}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all cursor-pointer"
+              title="Ver Landing Page e Planos de Assinatura"
+            >
+              Planos & Assinatura
+            </button>
+          )}
+
           {/* History button */}
           <button
             id="btn-open-history"
