@@ -1,6 +1,6 @@
 {
   "name": "Flow Prompt Forge",
-  "description": "Gerador de prompts para Google Flow com 3 agentes especializados (POV, UGC, Movimento), consistência de produto, conformidade TikTok Shop e padronização ultra realista.",
+  "description": "Máquina de criativos TikTok Shop para Google Flow (Veo 3 & Nano Banana) com Catálogo de Produtos Campeões 1-Clique, 3 agentes especializados (POV, UGC, Movimento), consistência física e conformidade TikTok.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

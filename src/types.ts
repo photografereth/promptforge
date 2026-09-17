@@ -106,3 +106,34 @@ export interface PromptHistoryItem {
   videoState?: VideoPromptState;
   imageState?: ImagePromptState;
 }
+
+export interface TikTokWinningProduct {
+  id: string;
+  name: string;
+  category: string;
+  niche: 'skincare' | 'tech' | 'wellness' | 'home' | 'beauty';
+  status: 'explosao' | 'tendencia' | 'consistente';
+  salesVolume: string; // Ex: "14.8k vendas / mês"
+  commissionRate: string; // Ex: "28%"
+  commissionValue: string; // Ex: "R$ 36,12"
+  ticketPrice: string; // Ex: "R$ 129,00"
+  affiliateUrl: string;
+  productAnchor: ProductAnchor;
+  suggestedHooks: {
+    pov: string;
+    ugc: string;
+    motion: string;
+  };
+  suggestedActions: {
+    pov: string;
+    ugc: string;
+    motion: string;
+  };
+  suggestedScenarios: {
+    pov: string;
+    ugc: string;
+    motion: string;
+  };
+  isCustom?: boolean;
+  sourceType?: 'link' | 'catalog';
+}

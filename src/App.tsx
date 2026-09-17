@@ -18,6 +18,7 @@ import { PreferencesModal } from './components/PreferencesModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { LandingPage } from './components/LandingPage';
 import { CheckoutModal } from './components/CheckoutModal';
+import { TikTokWinningCatalog } from './components/TikTokWinningCatalog';
 import {
   AppMode,
   AgentType,
@@ -338,6 +339,49 @@ export default function App() {
       character: { ...preset },
     }));
     if (enhancedPrompt) setEnhancedPrompt('');
+  };
+
+  // Winning Product injection handler (Etapa 1: 1-Clique)
+  const handleInjectWinningProduct = (
+    product: ProductAnchor,
+    agentScenario: {
+      sujeito: string;
+      acao: string;
+      cenario: string;
+      hookVisual: string;
+      suggestedAgent?: AgentType;
+    }
+  ) => {
+    const targetAgent = agentScenario.suggestedAgent || videoState.agent;
+
+    setVideoState((prev) => ({
+      ...prev,
+      product: { ...product },
+      sujeito: agentScenario.sujeito,
+      acao: agentScenario.acao,
+      cenario: agentScenario.cenario,
+      hookVisual: agentScenario.hookVisual,
+      agent: targetAgent,
+    }));
+
+    setImageState((prev) => ({
+      ...prev,
+      product: { ...product },
+      sujeito: agentScenario.sujeito,
+      acao: agentScenario.acao,
+      cenario: agentScenario.cenario,
+    }));
+
+    if (agentScenario.suggestedAgent) {
+      handleAgentChange(agentScenario.suggestedAgent);
+    }
+
+    if (enhancedPrompt) setEnhancedPrompt('');
+
+    // Smooth scroll down to agent and product anchor
+    if (essentialSectionRef.current) {
+      essentialSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   // Handler for Multimodal Analysis success (Product & Model references)
@@ -781,6 +825,14 @@ export default function App() {
 
       {/* Main Two-Column Layout (stacked on mobile) */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        {/* 🔥 TIKTOK SHOP WINNING PRODUCTS CATALOG (ETAPA 1: 1-CLIQUE) */}
+        <div className="mb-6">
+          <TikTokWinningCatalog
+            currentAgent={videoState.agent}
+            onInjectProduct={handleInjectWinningProduct}
+          />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Form & Controls (7 cols on desktop) */}
           <div className="lg:col-span-7 space-y-5">
