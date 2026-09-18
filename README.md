@@ -76,7 +76,7 @@ O Flow Prompt Forge permite anexar **múltiplas fotos** para alimentar a visão 
 ## 🛠️ Tecnologias Utilizadas
 
 * **Frontend:** React 19, TypeScript, Tailwind CSS v4, Motion, Lucide Icons.
-* **Backend:** Node.js, Express, Vite em modo middleware.
+* **Backend:** Vercel Serverless Functions (Node.js) sob `/api`, com Supabase para autenticação e banco de dados.
 * **Inteligência Artificial:** Google GenAI SDK (`@google/genai`).
 * **Formatos Suportados:** Google Flow Veo 3 (Video Generation), Google Flow Nano Banana (Image Generation & Inpainting).
 
@@ -100,24 +100,28 @@ npm install
 ```
 
 ### 3. Configurar Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto com base no `.env.example`:
+Crie um arquivo `.env.local` na raiz do projeto com base no `.env.example`:
 ```env
 GEMINI_API_KEY=seu_token_aqui
-PORT=3000
+VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+VITE_SUPABASE_ANON_KEY=sua_chave_anon_aqui
+SUPABASE_URL=https://SEU_PROJETO.supabase.co
+SUPABASE_ANON_KEY=sua_chave_anon_aqui
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_aqui
 ```
-> *Nota: Você pode obter sua chave de API gratuitamente no [Google AI Studio](https://aistudio.google.com/).*
+> *Nota: Você pode obter sua chave de API gratuitamente no [Google AI Studio](https://aistudio.google.com/). As credenciais do Supabase (URL, anon key e service role key) ficam em Settings > API no seu projeto Supabase — as variáveis `VITE_`-prefixadas são expostas ao bundle do navegador, enquanto as demais são lidas apenas no servidor pelas funções em `/api`. `SUPABASE_SERVICE_ROLE_KEY` ainda não é usada por nenhum código deste pilar, mas está reservada para uma futura funcionalidade de cobrança — documente-a mesmo assim e nunca a exponha em uma variável `VITE_`.*
 
 ### 4. Iniciar o Servidor de Desenvolvimento
 ```bash
 npm run dev
 ```
-Acesse a aplicação no navegador em `http://localhost:3000`.
+Isso executa `vercel dev`, que serve tanto o frontend (Vite) quanto as funções serverless em `/api` localmente. Acesse a aplicação no navegador no endereço informado pelo `vercel dev` (por padrão `http://localhost:3000`).
 
 ### 5. Compilar para Produção
 ```bash
 npm run build
-npm start
 ```
+> *Nota: `npm start` também executa `vercel dev` (ambiente de desenvolvimento local via CLI da Vercel) — não é um build de produção. O deploy de produção é feito através da Vercel (`vercel --prod` ou integração com Git), que compila o frontend com `npm run build` e publica as funções em `/api` automaticamente.*
 
 ---
 
@@ -126,7 +130,12 @@ npm start
 ```
 ├── index.html                   # Entry point com script defensivo de fetch
 ├── package.json                 # Scripts e dependências
-├── server.ts                    # Servidor Express com rotas de IA multimodal & Vite middleware
+├── api/                         # Funções Serverless da Vercel (Node.js) com as rotas de IA multimodal
+│   ├── _lib/                    # Helpers de backend compartilhados (auth, cliente Gemini, parsing, Supabase anon)
+│   ├── autofill.ts              # Preenchimento automático de campos com IA
+│   ├── enhance.ts               # Aprimoramento de prompt com IA
+│   ├── analyze-references.ts    # Análise multimodal de referências de produto e modelo
+│   └── parse-product-url.ts     # Extração de dados de produto a partir de URL
 ├── src/
 │   ├── main.tsx                 # Entrada do React
 │   ├── App.tsx                  # Componente mestre com layout split e controle de estado
