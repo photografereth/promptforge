@@ -752,7 +752,7 @@ export default function App() {
               )}
             </span>
             <span className="hidden md:inline font-mono text-[10px] text-neutral-400">
-              VEO 3 & NANO BANANA • 3 AGENTES TIKTOK SHOP
+              OMNI 1.1 FLASH & VEO (ATÉ 10S) • 3 AGENTES TIKTOK SHOP
             </span>
           </div>
 

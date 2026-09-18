@@ -76,7 +76,7 @@ export const MoreDetailsAccordion: React.FC<MoreDetailsAccordionProps> = ({
       {isOpen && (
         <div className="p-4 sm:p-5 pt-0 border-t border-neutral-800/80 space-y-5 animate-in fade-in duration-200">
           {mode === 'video' ? (
-            /* ================= MODE: VIDEO (Veo 3) ================= */
+            /* ================= MODE: VIDEO (Omni 1.1 Flash / Veo) ================= */
             <div className="space-y-4 pt-4">
               {/* Hook Visual TikTok & Anti-Rejeição */}
               <div className="p-3.5 bg-amber-500/5 rounded-xl border border-amber-500/20 space-y-3">
@@ -229,7 +229,7 @@ export const MoreDetailsAccordion: React.FC<MoreDetailsAccordionProps> = ({
               <div className="p-3.5 bg-neutral-950/60 rounded-xl border border-neutral-800/80 space-y-3">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
                   <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Áudio Nativo do Veo 3</span>
+                  <span>Áudio Nativo (Voz, SFX & Ambiente)</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -307,19 +307,19 @@ export const MoreDetailsAccordion: React.FC<MoreDetailsAccordionProps> = ({
                     <Clock className="w-3.5 h-3.5 text-amber-400/80" />
                     <span>Duração do vídeo</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {VIDEO_DURATIONS.map((dur) => (
                       <button
                         key={dur}
                         type="button"
                         onClick={() => onVideoStateChange('duracao', dur)}
-                        className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer text-center ${
                           videoState.duracao === dur
                             ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-inner'
                             : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-neutral-200'
                         }`}
                       >
-                        {dur} {dur === '8s' ? '(recomendado)' : ''}
+                        {dur} {dur === '10s' ? '(máx)' : dur === '8s' ? '(ideal)' : ''}
                       </button>
                     ))}
                   </div>

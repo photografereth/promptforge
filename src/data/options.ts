@@ -30,7 +30,7 @@ export const VIDEO_LENSES = [
   'Foco seletivo com desfoque de fundo cremoso',
 ] as const;
 
-export const VIDEO_DURATIONS = ['4s', '6s', '8s'] as const;
+export const VIDEO_DURATIONS = ['4s', '6s', '8s', '10s'] as const;
 
 export const VIDEO_RATIOS = ['9:16', '16:9', '1:1'] as const;
 

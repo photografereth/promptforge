@@ -1,6 +1,6 @@
 {
   "name": "Flow Prompt Forge",
-  "description": "Máquina de criativos TikTok Shop para Google Flow (Veo 3 & Nano Banana) com Catálogo de Produtos Campeões 1-Clique, 3 agentes especializados (POV, UGC, Movimento), consistência física e conformidade TikTok.",
+  "description": "Máquina de criativos TikTok Shop para Google Flow com Omni 1.1 Flash & Veo (vídeos até 10s) e Nano Banana (imagem), com Catálogo de Produtos Campeões, importação via link real, 3 agentes especializados e conformidade estrita TikTok.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

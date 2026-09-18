@@ -21,7 +21,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onSelectPl
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
             <span className="font-mono text-[11px] uppercase text-neutral-300">
-              SISTEMA ATIVO • GOOGLE FLOW (VEO 3 & NANO BANANA) • TIKTOK SHOP READY
+              SISTEMA ATIVO • GOOGLE FLOW (OMNI 1.1 FLASH & VEO ATÉ 10S) • TIKTOK SHOP READY
             </span>
           </div>
           <div className="font-mono text-[11px] text-neutral-400">
@@ -91,7 +91,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onSelectPl
 
           <p className="mt-6 text-base sm:text-lg text-neutral-400 max-w-3xl mx-auto leading-relaxed">
             Identifique os produtos campeões com maior comissão no TikTok Shop e gere prompts
-            cinematográficos calibrados para os modelos <strong className="text-neutral-200 font-semibold">Google Flow Veo 3</strong> e <strong className="text-neutral-200 font-semibold">Nano Banana</strong>. 
+            cinematográficos calibrados para os modelos de vídeo de alta fidelidade como <strong className="text-neutral-200 font-semibold">Omni 1.1 Flash</strong> e <strong className="text-neutral-200 font-semibold">Veo</strong> (vídeos até 10s) e <strong className="text-neutral-200 font-semibold">Nano Banana</strong>. 
             Você só adiciona a sua modelo e gera criativos em 30 segundos nos arquétipos <strong className="text-neutral-200 font-semibold">POV</strong>, <strong className="text-neutral-200 font-semibold">UGC</strong> e <strong className="text-neutral-200 font-semibold">Movimento</strong>.
           </p>
 
@@ -391,7 +391,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onSelectPl
                       Gere os Prompts em 1 Clique
                     </div>
                     <div className="text-xs text-neutral-400 mt-1">
-                      Receba o código de prompt otimizado para o Google Veo 3 com safe zone ativa, lente calibrada e sem termos proibidos pelo TikTok.
+                      Receba o código de prompt otimizado para Omni 1.1 Flash e Veo (vídeos até 10s) com safe zone ativa, lente calibrada e sem termos proibidos pelo TikTok.
                     </div>
                   </div>
                 </div>

@@ -70,7 +70,7 @@ export const QuickFillSection: React.FC<QuickFillSectionProps> = ({
             </span>
           ) : (
             <span className="text-[11px] text-neutral-400">
-              {mode === 'video' ? 'Vídeo Ultra Realista (Veo 3)' : 'Foto Ultra Realista (Nano Banana)'}
+              {mode === 'video' ? 'Vídeo Ultra Realista (Omni 1.1 Flash / Veo)' : 'Foto Ultra Realista (Nano Banana)'}
             </span>
           )}
         </div>

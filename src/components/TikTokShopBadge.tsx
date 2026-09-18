@@ -105,10 +105,10 @@ export const TikTokShopBadge: React.FC<TikTokShopBadgeProps> = ({
               <div className="p-3 bg-neutral-950 rounded-xl border border-neutral-800">
                 <h4 className="font-semibold text-neutral-100 flex items-center gap-1.5 mb-1 text-xs">
                   <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
-                  3. Padrão "Vídeo Ultra Realista"
+                  3. Padrão "Vídeo Ultra Realista" (Até 10s)
                 </h4>
                 <p className="text-neutral-400 leading-relaxed text-[11px]">
-                  Configurado para Veo 3 com ênfase em texturas táteis reais, microporos de pele, iluminação física e ausência de distorções de inteligência artificial ou look plástico de animação digital 3D.
+                  Calibrado para modelos de vídeo como Omni 1.1 Flash e Veo com ênfase em texturas táteis reais, microporos de pele, iluminação física e ausência de distorções de inteligência artificial ou look plástico de animação digital 3D.
                 </p>
               </div>
             </div>

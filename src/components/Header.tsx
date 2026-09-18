@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-400 font-normal hidden sm:block">
-              Forja ágil de prompts autorais para Veo 3 (vídeo) e Nano Banana (imagem)
+              Forja de prompts para Omni 1.1 Flash & Veo (vídeos até 10s) e Nano Banana (imagem)
             </p>
           </div>
         </div>

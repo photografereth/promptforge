@@ -23,10 +23,10 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({ mode, onModeChange }
           }`}
         >
           <span className="text-lg leading-none">🎬</span>
-          <span className="tracking-wide">Vídeo (Veo 3)</span>
+          <span className="tracking-wide">Vídeo (Omni 1.1 Flash / Veo)</span>
           {mode === 'video' && (
             <span className="hidden sm:inline-block text-[11px] font-normal px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-300/90 border border-amber-400/20">
-              Câmera & Movimento
+              Até 10s • Câmera & Movimento
             </span>
           )}
         </button>

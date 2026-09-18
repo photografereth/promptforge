@@ -54,7 +54,7 @@ export interface VideoPromptState {
   sfx: string;
   somAmbiente: string;
   evitar: string;
-  duracao: '4s' | '6s' | '8s';
+  duracao: '4s' | '6s' | '8s' | '10s';
   proporcao: '9:16' | '16:9' | '1:1';
   ultraRealista: boolean;
   safeZoneTikTok: boolean;

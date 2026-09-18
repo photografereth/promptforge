@@ -1,7 +1,7 @@
 import { VideoPromptState, ImagePromptState } from '../types';
 
 /**
- * Construtor de prompts de vídeo especializados para o Veo 3
+ * Construtor de prompts de vídeo especializados para Omni 1.1 Flash e Veo (vídeos até 10s)
  * Padronizado para Vídeo Ultra Realista, com suporte aos 3 Agentes:
  * - POV (Ponto de Vista em 1ª pessoa)
  * - UGC (Criador autêntico / Social Proof)

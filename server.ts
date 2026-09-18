@@ -202,15 +202,16 @@ app.post("/api/autofill", async (req, res) => {
 MANTENHA ESTAS CARACTERÍSTICAS FÍSICAS RIGOROSAMENTE IDÊNTICAS!`
       : "Nenhum produto pré-ancorado especificado; defina o sujeito de produto claramente a partir da ideia.";
 
-    const promptText = `Você é um diretor de cena e estrategista de criativos para TikTok Shop especializado no Google Flow (Veo 3 para vídeo e Nano Banana para imagem).
+    const promptText = `Você é um diretor de cena e estrategista de criativos para TikTok Shop especializado no Google Flow (modelos de vídeo como Omni 1.1 Flash e Veo para vídeo de até 10s, e Nano Banana para imagem).
 Sua missão é decompor a ideia do usuário em campos estruturados em português do Brasil, garantindo:
 1. Agente Selecionado: ${agentDescription}
 2. Consistência de Produto: ${productAnchorInfo}
 3. Conformidade estrita com Políticas do TikTok Shop: PROIBIDO alegações médicas de cura ("cura rugas", "elimina 100% de celulite"), proibições financeiras, antes/depois milagroso. Foco na demonstração sensorial e funcional autêntica.
 4. Padrão "VÍDEO ULTRA REALISTA": Câmera real, textura natural de pele e materiais físicos, sem look plástico de IA.
 5. Formato padrão: vertical 9:16 com Safe Zone para o carrinho e botões do TikTok Shop.
+6. Duração compatível: 4s, 6s, 8s ou 10s (máximo 10s para alta retenção).
 
-O modo atual é: ${mode === "video" ? "VÍDEO (Google Flow Veo 3 - Ultra Realista)" : "IMAGEM (Google Flow Nano Banana - Ultra Realista)"}.
+O modo atual é: ${mode === "video" ? "VÍDEO (Google Flow Omni 1.1 Flash / Veo - Ultra Realista até 10s)" : "IMAGEM (Google Flow Nano Banana - Ultra Realista)"}.
 
 Retorne ESTRITAMENTE um JSON puro válido (sem markdown, sem explicações):
 ${
@@ -293,12 +294,12 @@ app.post("/api/enhance", async (req, res) => {
     const instructions =
       mode === "video"
         ? `Você é um diretor de fotografia comercial e estrategista líder de criativos para TikTok Shop.
-Sua tarefa é aprimorar o prompt de vídeo para o Google Flow (Veo 3), garantindo:
+Sua tarefa é aprimorar o prompt de vídeo para modelos de ponta como Omni 1.1 Flash e Veo (para vídeos de até 10s), garantindo:
 - PADRÃO VÍDEO ULTRA REALISTA: Textura de pele humana real com microporos, materiais com física precisa de refração e reflexo, iluminação volumétrica natural, sem qualquer aspecto de CGI ou plástico de IA.
 - AGENTE ESPECIALIZADO: Respeite rigorosamente se o agente é POV (1ª pessoa mãos/unboxing), UGC (criador autêntico smartphone 4K com hook nos primeiros 2s) ou Movimento (B-Roll de produto dinâmico em 360°).
 - CONSISTÊNCIA DE PRODUTO INEGOCIÁVEL: Preserve integralmente a descrição dos atributos físicos do produto (nome, embalagem, cores e acabamentos).
 - DIRETRIZES DO TIKTOK SHOP: Nenhuma promessa médica ou de cura exagerada. Preservação de Safe Zone 9:16 (sem elementos vitais no rodapé onde fica a sacola de compras).
-- Sintaxe padrão do Veo 3: Mantenha o formato estruturado com enquadramento, sujeito e ação, iluminação, áudio, o que evitar, e finalize com as tags técnicas [Duração: ... | Proporção: 9:16 | Safe Zone TikTok Shop: Ativa | Modo: Ultra Realista].
+- Sintaxe padrão calibrada para Omni 1.1 Flash e Veo: Mantenha o formato estruturado com enquadramento, sujeito e ação, iluminação, áudio, o que evitar, e finalize com as tags técnicas [Duração: ... | Proporção: 9:16 | Safe Zone TikTok Shop: Ativa | Modo: Ultra Realista].
 - Responda apenas com o texto do prompt aprimorado em português do Brasil.`
         : `Você é um mestre da fotografia comercial ultra realista de produto para o Google Flow Nano Banana (Gemini 2.5 Flash Image).
 Sua tarefa é aprimorar o prompt determinístico em linguagem natural coesa, garantindo:
@@ -464,7 +465,7 @@ app.post("/api/analyze-references", async (req, res) => {
         ? "AGENTE UGC (Criador Autêntico TikTok Shop): Conteúdo estilo smartphone 4K real, criador espontâneo reagindo e testando o produto com energia natural, com gancho (hook) visual forte nos primeiros 2 segundos."
         : "AGENTE MOVIMENTO (B-Roll Dinâmico Comercial): Planos cinematográficos com travelling orbital 360° em volta do produto, iluminação de estúdio comercial com reflexos volumétricos nos materiais.";
 
-    const promptInstructions = `Você é um diretor de cena, especialista em computação visual e estrategista sênior de criativos para TikTok Shop com maestria no Google Flow (Veo 3 para vídeo ultra realista e Nano Banana para imagem).
+    const promptInstructions = `Você é um diretor de cena, especialista em computação visual e estrategista sênior de criativos para TikTok Shop com maestria em modelos de vídeo como Omni 1.1 Flash e Veo (para vídeos de até 10s ultra realistas) e Nano Banana para imagem.
 
 Você recebeu ${parsedProducts.length + parsedCharacters.length + parsedScenes.length} imagens de referência para ancorar consistência absoluta entre cortes e cenas:
 ${parsedProducts.length > 0 ? `- PRODUTO (${parsedProducts.length} referências): Analise minuciosamente o produto físico em todas as imagens fornecidas (formato exato, tipo de embalagem/frasco, tampa, relevo, cores precisas, rótulo/tipografia, textura do líquido/creme/material, reflexos de vidro/plástico/metal).` : ""}
@@ -473,7 +474,7 @@ ${parsedScenes.length > 0 ? `- CENÁRIO / AMBIENTE (${parsedScenes.length} refer
 
 Contexto de Direção:
 1. Agente Selecionado: ${agentContext}
-2. Modo atual: ${mode === "video" ? "VÍDEO (Google Flow Veo 3 - Ultra Realista)" : "IMAGEM (Google Flow Nano Banana - 8K Ultra Realista)"}.
+2. Modo atual: ${mode === "video" ? "VÍDEO (Google Flow Omni 1.1 Flash / Veo - Ultra Realista até 10s)" : "IMAGEM (Google Flow Nano Banana - 8K Ultra Realista)"}.
 3. Políticas do TikTok Shop: PROIBIDO promessas médicas milagrosas ou cura ("cura rugas", "acaba com celulite"). Foco estrito na demonstração física real e autêntica. Safe Zone vertical 9:16 ativa para não cobrir o botão da sacola de compras no rodapé.
 4. Padrão VÍDEO ULTRA REALISTA: Textura orgânica de pele humana real com microporos, reflexos de luz física precisa nos materiais, sem qualquer aspecto artificial de CGI ou plástico de IA.
 
