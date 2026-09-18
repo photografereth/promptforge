@@ -96,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await authenticate(req, res);
   if (!user) return;
 
-  const { idea, mode, agent = 'ugc', product = {} } = req.body;
+  const { idea, mode, agent = 'ugc', product = {} } = req.body ?? {};
   if (!idea || typeof idea !== 'string') {
     return res.status(400).json({ error: 'A descrição da ideia é obrigatória.' });
   }

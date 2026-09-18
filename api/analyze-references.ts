@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     mode = 'video',
     existingProduct = {},
     existingCharacter = {},
-  } = req.body;
+  } = req.body ?? {};
 
   const rawProducts = Array.isArray(productImages) && productImages.length > 0
     ? productImages

@@ -11,7 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await authenticate(req, res);
   if (!user) return;
 
-  const { url, rawNotes, image } = req.body;
+  const { url, rawNotes, image } = req.body ?? {};
 
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'O link real do produto é obrigatório.' });
