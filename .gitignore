@@ -9,3 +9,4 @@ coverage/
 bun.lock
 .worktrees/
 .superpowers/
+.vercel
