@@ -12,6 +12,8 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { TikTokWinningProduct } from '../types';
+import { apiFetch } from '../lib/apiFetch';
+import { compressImageFile } from '../utils/imageCompression';
 
 interface ImportProductModalProps {
   isOpen: boolean;
@@ -40,17 +42,15 @@ export const ImportProductModal: React.FC<ImportProductModalProps> = ({
       setError('Por favor, selecione um arquivo de imagem válido (PNG, JPG, WEBP).');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setImagePreview(result);
-      setImageData({
-        data: result,
-        mimeType: file.type,
+    compressImageFile(file)
+      .then(({ dataUrl, mimeType }) => {
+        setImagePreview(dataUrl);
+        setImageData({ data: dataUrl, mimeType });
+        setError(null);
+      })
+      .catch(() => {
+        setError('Não foi possível processar a imagem selecionada.');
       });
-      setError(null);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -70,11 +70,8 @@ export const ImportProductModal: React.FC<ImportProductModalProps> = ({
     setError(null);
 
     try {
-      const response = await fetch('/api/parse-product-url', {
+      const response = await apiFetch('/api/parse-product-url', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           url: url.trim(),
           rawNotes: rawNotes.trim() || undefined,

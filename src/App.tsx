@@ -31,6 +31,7 @@ import {
   PromptHistoryItem,
 } from './types';
 import { buildVideoPrompt, buildImagePrompt } from './utils/promptBuilder';
+import { apiFetch } from './lib/apiFetch';
 import { AlertCircle } from 'lucide-react';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
@@ -513,9 +514,8 @@ export default function App() {
     const currentProduct = mode === 'video' ? videoState.product : imageState.product;
 
     try {
-      const response = await fetch('/api/autofill', {
+      const response = await apiFetch('/api/autofill', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idea,
           mode,
@@ -612,9 +612,8 @@ export default function App() {
     const currentProduct = mode === 'video' ? videoState.product : imageState.product;
 
     try {
-      const response = await fetch('/api/enhance', {
+      const response = await apiFetch('/api/enhance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: currentDeterministicPrompt,
           mode,

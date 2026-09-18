@@ -27,6 +27,8 @@ import {
   AgentType,
   AppMode,
 } from '../types';
+import { apiFetch } from '../lib/apiFetch';
+import { compressImageFile } from '../utils/imageCompression';
 
 interface ReferenceUploadSectionProps {
   mediaState: ReferenceMediaState;
@@ -191,21 +193,15 @@ export const ReferenceUploadSection: React.FC<ReferenceUploadSectionProps> = ({
     });
   };
 
-  // Convert File to Base64 object
-  const processFile = (file: File): Promise<ReferenceImageItem> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve({
-          dataUrl: reader.result as string,
-          name: file.name,
-          size: file.size,
-          mimeType: file.type || 'image/jpeg',
-        });
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
+  // Convert File to Base64 object (redimensionado e comprimido)
+  const processFile = async (file: File): Promise<ReferenceImageItem> => {
+    const { dataUrl, mimeType } = await compressImageFile(file);
+    return {
+      dataUrl,
+      name: file.name,
+      size: file.size,
+      mimeType,
+    };
   };
 
   // Process multiple files
@@ -390,9 +386,8 @@ export const ReferenceUploadSection: React.FC<ReferenceUploadSectionProps> = ({
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/analyze-references', {
+      const response = await apiFetch('/api/analyze-references', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productImages: productImages.map((img) => ({
             data: img.dataUrl,
