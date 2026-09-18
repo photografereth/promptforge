@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -13,10 +14,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
-  const [email, setEmail] = useState('');
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGoogleProcessing, setIsGoogleProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
 
   if (!isOpen) return null;
@@ -24,18 +28,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const price = plan === 'monthly' ? 'R$ 119,00' : 'R$ 948,00';
   const recurrence = plan === 'monthly' ? 'por mês (cartão ou pix)' : 'por ano (equivale a 12x R$ 79,00)';
 
-  const handleSimulatePayment = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+    setErrorMessage(null);
+
+    try {
+      if (authMode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { display_name: name || undefined } },
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+
       setCompleted(true);
       setTimeout(() => {
         onSuccess();
-      }, 1400);
-    }, 1200);
+      }, 1200);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Não foi possível processar sua solicitação. Tente novamente.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleProcessing(true);
+    setErrorMessage(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      // O navegador é redirecionado para o Google; ao voltar, a sessão já estará
+      // ativa e o useSupabaseSession() do App detecta automaticamente.
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Não foi possível iniciar o login com Google.');
+      setIsGoogleProcessing(false);
+    }
   };
 
   return (
@@ -63,20 +101,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {completed ? (
           <div className="py-12 text-center space-y-3">
             <div className="font-mono text-xs text-emerald-400 font-bold uppercase tracking-widest">
-              [ PAGAMENTO CONFIRMADO ]
+              [ CONTA CRIADA ]
             </div>
             <h4 className="text-xl font-bold uppercase text-white">
-              Sua Licença Foi Ativada com Sucesso
+              Sua Conta Foi Criada com Sucesso
             </h4>
             <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-              Sessão única autorizada para <strong className="text-neutral-200">{email}</strong>. Redirecionando para a plataforma...
+              Sessão iniciada para <strong className="text-neutral-200">{email}</strong>. Redirecionando para a plataforma...
             </p>
             <div className="font-mono text-[11px] text-amber-400 pt-2">
               [ INGRESSANDO NO AMBIENTE AUTORIZADO... ]
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSimulatePayment} className="mt-5 space-y-5">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-5">
             {/* Plan Summary Box */}
             <div className="bg-neutral-900/60 border border-neutral-800 p-4 rounded text-xs space-y-2">
               <div className="flex justify-between items-center">
@@ -92,27 +130,70 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="text-[10px] text-neutral-500 ml-1">/{recurrence}</span>
                 </div>
               </div>
+              <p className="text-[10px] text-neutral-500 pt-1 border-t border-neutral-800">
+                Pagamento será solicitado após a criação da conta — nenhuma cobrança é feita agora.
+              </p>
+            </div>
+
+            {/* Auth mode toggle */}
+            <div className="flex items-center justify-center gap-2 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setAuthMode('signup')}
+                className={`uppercase px-2 py-1 rounded cursor-pointer ${
+                  authMode === 'signup' ? 'text-amber-400 font-bold' : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                Criar Conta
+              </button>
+              <span className="text-neutral-700">/</span>
+              <button
+                type="button"
+                onClick={() => setAuthMode('login')}
+                className={`uppercase px-2 py-1 rounded cursor-pointer ${
+                  authMode === 'login' ? 'text-amber-400 font-bold' : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                Já Tenho Conta
+              </button>
+            </div>
+
+            {/* Google login */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isGoogleProcessing}
+              className="w-full py-2.5 border border-neutral-700 rounded text-xs font-semibold text-neutral-200 hover:bg-neutral-900 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isGoogleProcessing ? 'REDIRECIONANDO...' : 'CONTINUAR COM GOOGLE'}
+            </button>
+
+            <div className="flex items-center gap-3 text-[10px] text-neutral-600 uppercase font-mono">
+              <div className="flex-1 h-px bg-neutral-800" />
+              ou com e-mail
+              <div className="flex-1 h-px bg-neutral-800" />
             </div>
 
             {/* Form Fields */}
             <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                  Nome Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Seu nome ou marca"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2.5 text-neutral-100 text-xs focus:outline-none focus:border-amber-400"
-                />
-              </div>
+              {authMode === 'signup' && (
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                    Nome Completo
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Seu nome ou marca"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2.5 text-neutral-100 text-xs focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
-                  E-mail para Liberação de Licença
+                  E-mail
                 </label>
                 <input
                   type="email"
@@ -123,38 +204,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2.5 text-neutral-100 text-xs focus:outline-none focus:border-amber-400"
                 />
               </div>
-            </div>
 
-            {/* Payment Method Selector */}
-            <div>
-              <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-2">
-                Método de Pagamento
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('pix')}
-                  className={`py-2.5 px-3 border rounded text-center font-mono font-bold cursor-pointer transition-all ${
-                    paymentMethod === 'pix'
-                      ? 'border-amber-400 bg-amber-400/10 text-amber-300'
-                      : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  [ PIX • APROVAÇÃO INSTANTÂNEA ]
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`py-2.5 px-3 border rounded text-center font-mono font-bold cursor-pointer transition-all ${
-                    paymentMethod === 'card'
-                      ? 'border-amber-400 bg-amber-400/10 text-amber-300'
-                      : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  [ CARTÃO DE CRÉDITO ]
-                </button>
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-neutral-400 mb-1">
+                  Senha
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Mínimo de 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2.5 text-neutral-100 text-xs focus:outline-none focus:border-amber-400"
+                />
               </div>
             </div>
+
+            {errorMessage && (
+              <div className="p-3 bg-red-950/70 border border-red-800/80 rounded text-[11px] text-red-200">
+                {errorMessage}
+              </div>
+            )}
 
             {/* Security Guarantee Notice */}
             <div className="p-3 bg-neutral-900/40 border border-neutral-800 rounded text-[11px] text-neutral-400 space-y-1">
@@ -162,7 +233,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 GARANTIA DE SEGURANÇA E ANTI-TRAPAÇA:
               </div>
               <p>
-                Sua chave de licença é individual e intransferível. A plataforma autoriza 1 sessão única simultânea e disponibiliza o acesso imediato ao motor de produtos campeões e ao canal do Telegram.
+                Sua conta é individual e intransferível. A plataforma autoriza 1 sessão única simultânea e disponibiliza o acesso imediato ao motor de produtos campeões e ao canal do Telegram.
               </p>
             </div>
 
@@ -173,8 +244,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-black text-xs uppercase tracking-wider rounded transition-all cursor-pointer shadow-lg disabled:opacity-50"
             >
               {isProcessing
-                ? 'PROCESSANDO E VINCULANDO SESSÃO...'
-                : `CONFIRMAR ASSINATURA — ${price}`}
+                ? 'PROCESSANDO...'
+                : authMode === 'signup'
+                ? 'CRIAR CONTA E CONTINUAR'
+                : 'ENTRAR'}
             </button>
           </form>
         )}
