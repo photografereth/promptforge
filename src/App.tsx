@@ -198,6 +198,19 @@ export default function App() {
     }
   }, []);
 
+  // When authentication completes (e.g. after a Google OAuth redirect) while
+  // the user is still sitting on the landing view, take them into the app
+  // and close any open checkout modal. This only fires on the
+  // unauthenticated -> authenticated transition while on landing; it does
+  // not yank an already-authenticated user back to the app if they
+  // deliberately navigate to the landing page via "VER LANDING PAGE & PLANOS".
+  useEffect(() => {
+    if (isAuthenticated && currentView === 'landing') {
+      setCurrentView('app');
+      setCheckoutPlan(null);
+    }
+  }, [isAuthenticated]);
+
   // Save history to localStorage
   const saveToHistory = (detPrompt: string, enhPrompt?: string) => {
     if (!detPrompt.trim()) return;

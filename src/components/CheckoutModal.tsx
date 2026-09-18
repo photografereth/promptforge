@@ -37,15 +37,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     try {
       if (authMode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { display_name: name || undefined } },
         });
         if (error) throw error;
+        if (!data.session) {
+          setErrorMessage('Verifique seu e-mail para confirmar a conta antes de continuar, ou entre em contato se já confirmou.');
+          setIsProcessing(false);
+          return;
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (!data.session) {
+          setErrorMessage('Não foi possível iniciar sua sessão. Tente novamente.');
+          setIsProcessing(false);
+          return;
+        }
       }
 
       setCompleted(true);
