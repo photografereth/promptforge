@@ -32,6 +32,8 @@ import {
 } from './types';
 import { buildVideoPrompt, buildImagePrompt } from './utils/promptBuilder';
 import { apiFetch } from './lib/apiFetch';
+import { supabase } from './lib/supabaseClient';
+import { useSupabaseSession } from './hooks/useSupabaseSession';
 import { AlertCircle } from 'lucide-react';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
@@ -126,13 +128,12 @@ export default function App() {
   // View Routing & Access Control
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const [checkoutPlan, setCheckoutPlan] = useState<'monthly' | 'annual' | null>(null);
-  const [isLicensed, setIsLicensed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('flow_prompt_forge_licensed') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const { session } = useSupabaseSession();
+  const isAuthenticated = session !== null;
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   // More details accordion (collapsed by default)
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
@@ -722,12 +723,6 @@ export default function App() {
           plan={checkoutPlan || 'annual'}
           onClose={() => setCheckoutPlan(null)}
           onSuccess={() => {
-            setIsLicensed(true);
-            try {
-              localStorage.setItem('flow_prompt_forge_licensed', 'true');
-            } catch {
-              // ignore
-            }
             setCheckoutPlan(null);
             setCurrentView('app');
           }}
@@ -744,7 +739,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-300">
-              {isLicensed ? (
+              {isAuthenticated ? (
                 <span className="text-emerald-400 font-bold">[ LICENÇA PESSOAL ATIVA • SESSÃO PROTEGIDA ]</span>
               ) : (
                 <span className="text-amber-400 font-bold">[ MODO DEMONSTRAÇÃO • SESSÃO LOCAL ]</span>
@@ -756,7 +751,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            {!isLicensed && (
+            {!isAuthenticated && (
               <button
                 type="button"
                 onClick={() => setCheckoutPlan('annual')}
@@ -783,6 +778,8 @@ export default function App() {
         onOpenLanding={() => setCurrentView('landing')}
         historyCount={history.length}
         hasAutoPreferences={preferences.autoApply}
+        userEmail={session?.user?.email}
+        onLogout={handleLogout}
       />
 
       {/* Mode Selector */}
@@ -959,12 +956,6 @@ export default function App() {
         plan={checkoutPlan || 'annual'}
         onClose={() => setCheckoutPlan(null)}
         onSuccess={() => {
-          setIsLicensed(true);
-          try {
-            localStorage.setItem('flow_prompt_forge_licensed', 'true');
-          } catch {
-            // ignore
-          }
           setCheckoutPlan(null);
         }}
       />

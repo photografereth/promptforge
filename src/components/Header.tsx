@@ -7,6 +7,8 @@ interface HeaderProps {
   onOpenLanding?: () => void;
   historyCount: number;
   hasAutoPreferences: boolean;
+  userEmail?: string;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,6 +17,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLanding,
   historyCount,
   hasAutoPreferences,
+  userEmail,
+  onLogout,
 }) => {
   return (
     <header className="border-b border-neutral-800/80 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-30">
@@ -44,6 +48,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right actions */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {userEmail && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs bg-neutral-800/50 border border-neutral-700/60">
+              <span className="text-neutral-400 truncate max-w-[140px]">{userEmail}</span>
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="text-neutral-500 hover:text-red-400 uppercase font-mono text-[10px] cursor-pointer"
+                >
+                  Sair
+                </button>
+              )}
+            </div>
+          )}
           {onOpenLanding && (
             <button
               type="button"
