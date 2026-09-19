@@ -8,7 +8,8 @@
     "build": "vite build",
     "start": "vercel dev",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -30,6 +31,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vercel": "^59.23.1",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "vitest": "^3.2.7"
   }
 }
