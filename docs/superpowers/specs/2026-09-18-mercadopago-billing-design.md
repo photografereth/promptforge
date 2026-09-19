@@ -107,7 +107,7 @@ create policy "subscriptions_select_own" on public.subscriptions
 
 create table public.billing_events (
   id bigint generated always as identity primary key,
-  user_id uuid references public.profiles(id) on delete set null,
+  user_id uuid, -- sem FK: a trilha de auditoria sobrevive à exclusão da conta (o trigger de imutabilidade bloquearia o `set null`)
   actor text not null check (actor in ('user','webhook','cron','system')),
   action text not null,
   before jsonb,
@@ -162,13 +162,15 @@ Toda transição grava uma linha em `billing_events` (ator, antes, depois, `mp_i
 
 ## Endpoints (todos autenticados; `user_id` vem do JWT verificado)
 
+Implementação: um único `api/billing/[action].ts` despacha todas as ações (limite de 12 funções do plano Hobby da Vercel).
+
 Toda chamada mutante ao Mercado Pago envia `X-Idempotency-Key`. A chave é
 derivada de `(user_id, ação, parâmetros)` para que clique duplo ou retry gere
 uma só operação.
 
 | Endpoint | Comportamento |
 |---|---|
-| `POST /api/billing/subscribe` | Body `{ plan, card_token_id }`. Resolve preço pelo `PLANS`. Recusa se já existe assinatura `active`/`pending`. Cria `preapproval` `authorized` com `external_reference = user_id`, `payer_email` do perfil e `back_url` HTTPS. Grava `subscriptions.status = 'pending'`. Acesso só libera pelo webhook. |
+| `POST /api/billing/subscribe` | Body `{ plan, card_token_id }`. Resolve preço pelo `PLANS`. Recusa se já existe assinatura em qualquer estado diferente de `canceled`. Preserva `refunded_at` na reassinatura (um reembolso por conta). Cria `preapproval` `authorized` com `external_reference = user_id`, `payer_email` do perfil e `back_url` HTTPS. Grava `subscriptions.status = 'pending'`. Acesso só libera pelo webhook. |
 | `POST /api/billing/change-plan` | Body `{ plan }`. Exige `active`. Grava `pending_plan` + `pending_plan_effective_at = current_period_end` e aplica o `PUT` conforme a porta de verificação. Não muda acesso nem `plan` até a renovação. |
 | `DELETE /api/billing/change-plan` | Desfaz a troca agendada (reverte o `PUT`). |
 | `POST /api/billing/update-card` | Body `{ card_token_id }`. `PUT /preapproval/{id}` com o novo token. Em `past_due`, a próxima tentativa de cobrança usa o novo cartão. |
@@ -187,8 +189,7 @@ Rota pública, protegida por validação criptográfica:
 - `v1 = HMAC-SHA256(canônica, MP_WEBHOOK_SECRET)` em hex, comparado com
   `crypto.timingSafeEqual`. Header ausente ou assinatura divergente → `401`.
 - **Anti-replay:** `ts` com mais de 5 minutos de diferença → `401`.
-- **Idempotência:** insere `(data.id, type)` em `webhook_events`; se já existir,
-  responde `200` sem reprocessar.
+- **Idempotência:** insere `(<data.id>:<x-request-id>, type)` em `webhook_events`; se já existir, responde `200` sem reprocessar. O `data.id` sozinho não serve como chave: o MP notifica o mesmo `authorized_payment` várias vezes ao mudar de estado, e descartar as posteriores perderia a cobrança confirmada. Os handlers também são idempotentes por estado (não gravam nem enviam e-mail se nada mudou).
 - `200` só **depois** de gravar. Falha interna → `5xx` para o MP reenviar.
 
 Tópicos:
