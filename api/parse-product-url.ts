@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { authenticate } from './_lib/auth';
+import { requireActiveSubscription } from './_lib/billing/requireSubscription';
 import { getGemini, generateWithFallback } from './_lib/gemini';
 import { parseImageData } from './_lib/parseImageData';
 
@@ -10,6 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const user = await authenticate(req, res);
   if (!user) return;
+  if (!(await requireActiveSubscription(user, res))) return;
 
   const { url, rawNotes, image } = req.body ?? {};
 

@@ -1,0 +1,4 @@
+{
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "crons": [{ "path": "/api/cron/billing", "schedule": "0 9 * * *" }]
+}

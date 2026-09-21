@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { authenticate } from './_lib/auth';
+import { requireActiveSubscription } from './_lib/billing/requireSubscription';
 import { getGemini, generateWithFallback } from './_lib/gemini';
 
 // Fallback local calibrado para os 3 agentes TikTok Shop & âncora de produto
@@ -95,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const user = await authenticate(req, res);
   if (!user) return;
+  if (!(await requireActiveSubscription(user, res))) return;
 
   const { idea, mode, agent = 'ugc', product = {} } = req.body ?? {};
   if (!idea || typeof idea !== 'string') {

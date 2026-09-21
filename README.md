@@ -165,3 +165,12 @@ Contribuições da comunidade são super bem-vindas! Sinta-se à vontade para:
 ## 📄 Licença
 
 Este projeto é disponibilizado sob a licença [MIT](LICENSE). Desenvolvido para a comunidade global de criadores de conteúdo e desenvolvedores de inteligência artificial.
+
+## Cobrança (Mercado Pago)
+
+Assinaturas mensal e anual via API de Assinaturas (`preapproval`), com Card Payment Brick no frontend.
+Variáveis de ambiente (server-only, nunca `VITE_`): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `CRON_SECRET`,
+`SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `MAIL_FROM`, `APP_URL`; pública via `/api/billing/config`: `MP_PUBLIC_KEY`.
+Webhook: `POST /api/webhooks/mercadopago` (tópicos `subscription_preapproval` e `subscription_authorized_payment`).
+Cron diário: `/api/cron/billing` (protegido por `CRON_SECRET`). O Mercado Pago não tem sandbox: testes ponta a ponta
+são manuais e seguidos de cancelamento. Testes unitários: `npm test`.
