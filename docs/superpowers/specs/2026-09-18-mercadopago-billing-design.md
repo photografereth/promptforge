@@ -301,3 +301,18 @@ carência. Nunca automatizado em pipeline.
 4. **Jurídico:** confirmar o prazo e o texto do direito de arrependimento.
 5. **E-mail:** SPF/DKIM do domínio no Resend precisam estar verificados antes
    de produção.
+
+## Resultados da verificação (Task 1)
+
+Verificação feita em 2026-09-21 via MCP do Mercado Pago (`search_documentation`, guias em pt/MLB). O MCP indexa apenas os guias, não a referência da API com schemas; por isso vários itens ficaram sem confirmação. Uma tentativa de teste empírico (preapproval `pending`, sem cartão) foi bloqueada pelo Mercado Pago: `400 "Both payer and collector must be real or test users"` (recebedor é conta real, comprador de teste é de teste). **Decisão: seguir sem o teste e validar tudo na Task 18.**
+
+| Item | Resultado | Fonte |
+|---|---|---|
+| 1. `PUT /preapproval/{id}` altera `frequency_type` e `transaction_amount` | **NÃO CONFIRMADO (risco aceito).** A doc só documenta `auto_recurring.transaction_amount` + `currency_id` no PUT. Mudar `frequency_type` (months→years) não é documentado, nem a partir de qual cobrança vale. **Se a Task 18 mostrar que o PUT recusa ou aplica de imediato, `changePlan` (Task 9) deve migrar para o plano B: cancelar no vencimento e recriar com novo token do Brick.** | https://www.mercadopago.com/developers/pt/docs/subscriptions/subscription-management |
+| 2. `GET /authorized_payments/{id}` (valores de `status`, `payment.id/status`) | **NÃO CONFIRMADO.** Sem schema na doc. Só confirma que o webhook `subscription_authorized_payment` aponta para `/authorized_payments/[ID]`. Validar em `paymentOutcome` na Task 18. | https://www.mercadopago.com/developers/pt/docs/your-integrations/notifications/webhooks |
+| 3. `GET /authorized_payments/search?preapproval_id=` devolve `{ results: [...] }` | **NÃO CONFIRMADO.** Validar na Task 18. | — |
+| 4. `POST /v1/payments/{id}/refunds` (reembolso total) para pagamento de assinatura | **PARCIAL.** O endpoint existe e aceita `X-Idempotency-Key`; pagamentos com mais de 180 dias não são reembolsáveis. Nada específico para pagamentos de assinatura. Validar na Task 18. | https://www.mercadopago.com/developers/pt/docs/checkout-api-payments/payment-management/cancellations-and-refunds/refund-pix |
+| 5. `GET /preapproval/{id}` expõe `next_payment_date` | **NÃO CONFIRMADO.** Não aparece na doc. `processPreapprovalEvent` usa `pre.next_payment_date ?? sub.current_period_end`; se o campo não existir, `current_period_end` nunca é atualizado — verificar na Task 18. | — |
+| 6. `card_token_id` do Brick aceito no `POST` e no `PUT` (troca de cartão) | **CONFIRMADO** para o `PUT` ("Alterar cartão do meio de pagamento primário": PUT com `card_token_id`). | https://www.mercadopago.com/developers/pt/docs/subscriptions/subscription-management |
+
+Divergência a conferir: a doc escreve `status: canceled` no PUT de cancelamento; o código usa `cancelled` (grafia do `status` que a API devolve). Validar na Task 18.
