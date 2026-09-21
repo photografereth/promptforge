@@ -37,5 +37,7 @@ export function useSubscription(enabled: boolean) {
     return () => window.removeEventListener(SUBSCRIPTION_REQUIRED_EVENT, onRequired);
   }, [refresh]);
 
-  return { data, isLoading, error, refresh };
+  // Entre a autenticação e o primeiro fetch, `data` e `error` são nulos: conta como carregando.
+  const loading = isLoading || (enabled && data === null && error === null);
+  return { data, isLoading: loading, error, refresh };
 }

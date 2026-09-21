@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, History, Sparkles, Clapperboard } from 'lucide-react';
+import { Settings, History, Sparkles, Clapperboard, CreditCard } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -9,6 +9,7 @@ interface HeaderProps {
   hasAutoPreferences: boolean;
   userEmail?: string;
   onLogout?: () => void;
+  onOpenSubscription?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   hasAutoPreferences,
   userEmail,
   onLogout,
+  onOpenSubscription,
 }) => {
   return (
     <header className="border-b border-neutral-800/80 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-30">
@@ -61,6 +63,17 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
             </div>
+          )}
+          {onOpenSubscription && (
+            <button
+              type="button"
+              onClick={onOpenSubscription}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-200 bg-neutral-800/70 hover:bg-neutral-800 border border-neutral-700/60 hover:border-neutral-600 transition-all cursor-pointer"
+              title="Gerenciar minha assinatura"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Minha assinatura</span>
+            </button>
           )}
           {onOpenLanding && (
             <button

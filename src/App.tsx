@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ModeSelector } from './components/ModeSelector';
 import { TikTokShopBadge } from './components/TikTokShopBadge';
@@ -34,6 +34,12 @@ import { buildVideoPrompt, buildImagePrompt } from './utils/promptBuilder';
 import { apiFetch } from './lib/apiFetch';
 import { supabase } from './lib/supabaseClient';
 import { useSupabaseSession } from './hooks/useSupabaseSession';
+import { useSubscription } from './hooks/useSubscription';
+import { SubscriptionGate } from './components/billing/SubscriptionGate';
+import { SubscriptionConfirm } from './components/billing/SubscriptionConfirm';
+import { SubscriptionPortal } from './components/billing/SubscriptionPortal';
+import { GraceBanner } from './components/billing/GraceBanner';
+import { BillingLoading, BillingLoadError } from './components/billing/BillingStateScreens';
 import { AlertCircle } from 'lucide-react';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
@@ -130,6 +136,22 @@ export default function App() {
   const [checkoutPlan, setCheckoutPlan] = useState<'monthly' | 'annual' | null>(null);
   const { session } = useSupabaseSession();
   const isAuthenticated = session !== null;
+
+  // Cobrança: estado vindo do backend (o bloqueio real das rotas de IA é no servidor).
+  const subscription = useSubscription(isAuthenticated);
+  const [isConfirming, setIsConfirming] = useState<boolean>(
+    () => window.location.pathname === '/subscription/confirm'
+  );
+  const [isPortalOpen, setIsPortalOpen] = useState(false);
+  const [portalStartsWithCard, setPortalStartsWithCard] = useState(false);
+  const finishConfirming = useCallback(() => {
+    window.history.replaceState(null, '', '/');
+    setIsConfirming(false);
+  }, []);
+  const startConfirming = () => {
+    window.history.replaceState(null, '', '/subscription/confirm');
+    setIsConfirming(true);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -744,6 +766,34 @@ export default function App() {
     );
   }
 
+  // Cobrança: usuário autenticado sem acesso vê o paywall no lugar da bancada.
+  if (isAuthenticated) {
+    if (isConfirming) {
+      return (
+        <SubscriptionConfirm
+          hasAccess={subscription.data?.hasAccess ?? false}
+          refresh={subscription.refresh}
+          onDone={finishConfirming}
+        />
+      );
+    }
+    if (subscription.isLoading) return <BillingLoading />;
+    if (!subscription.data) {
+      return (
+        <BillingLoadError message={subscription.error} onRetry={subscription.refresh} onLogout={handleLogout} />
+      );
+    }
+    if (!subscription.data.hasAccess) {
+      return (
+        <SubscriptionGate
+          onSubscribed={startConfirming}
+          onLogout={handleLogout}
+          wasCanceled={subscription.data.status === 'canceled'}
+        />
+      );
+    }
+  }
+
   // 2. Application Workbench View
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
@@ -793,7 +843,24 @@ export default function App() {
         hasAutoPreferences={preferences.autoApply}
         userEmail={session?.user?.email}
         onLogout={handleLogout}
+        onOpenSubscription={
+          subscription.data && subscription.data.status !== 'none'
+            ? () => {
+                setPortalStartsWithCard(false);
+                setIsPortalOpen(true);
+              }
+            : undefined
+        }
       />
+      {subscription.data?.status === 'past_due' && subscription.data.hasAccess && (
+        <GraceBanner
+          graceUntil={subscription.data.graceUntil}
+          onUpdateCard={() => {
+            setPortalStartsWithCard(true);
+            setIsPortalOpen(true);
+          }}
+        />
+      )}
 
       {/* Mode Selector */}
       <ModeSelector
@@ -962,6 +1029,16 @@ export default function App() {
         onDeleteItem={handleDeleteHistoryItem}
         onClearHistory={handleClearAllHistory}
       />
+
+      {subscription.data && (
+        <SubscriptionPortal
+          isOpen={isPortalOpen}
+          status={subscription.data}
+          startWithCard={portalStartsWithCard}
+          onClose={() => setIsPortalOpen(false)}
+          onChanged={subscription.refresh}
+        />
+      )}
 
       {/* Checkout / Subscription Modal */}
       <CheckoutModal
