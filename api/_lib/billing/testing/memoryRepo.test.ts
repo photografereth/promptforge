@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createMemoryRepo } from './memoryRepo';
-import { makeSub, NOW, daysFromNow } from './fixtures';
+import { createMemoryRepo } from './memoryRepo.js';
+import { makeSub, NOW, daysFromNow } from './fixtures.js';
 
 const clock = () => new Date(NOW);
 

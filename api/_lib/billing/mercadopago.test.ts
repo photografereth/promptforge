@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createMpClient, MpError, paymentOutcome } from './mercadopago';
+import { createMpClient, MpError, paymentOutcome } from './mercadopago.js';
 
 function fakeFetch(status: number, body: unknown) {
   return vi.fn(async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch & ReturnType<typeof vi.fn>;

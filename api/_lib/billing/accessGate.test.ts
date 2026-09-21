@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { decideAccess } from './accessGate';
-import { createMemoryRepo } from './testing/memoryRepo';
-import { daysFromNow, makeSub, NOW } from './testing/fixtures';
+import { decideAccess } from './accessGate.js';
+import { createMemoryRepo } from './testing/memoryRepo.js';
+import { daysFromNow, makeSub, NOW } from './testing/fixtures.js';
 
 describe('decideAccess', () => {
   it('ok para active e past_due em carência', async () => {

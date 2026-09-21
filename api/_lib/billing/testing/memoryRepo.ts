@@ -1,4 +1,4 @@
-import type { BillingEventInput, BillingRepo, Subscription } from '../types';
+import type { BillingEventInput, BillingRepo, Subscription } from '../types.js';
 
 export interface MemoryRepo extends BillingRepo {
   events: BillingEventInput[];

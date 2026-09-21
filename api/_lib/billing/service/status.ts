@@ -1,6 +1,6 @@
-import { checkWithdraw, hasAccess } from '../access';
-import { paymentOutcome } from '../mercadopago';
-import { fail, MP_ERROR, ok, type Deps, type Result, type User } from './context';
+import { checkWithdraw, hasAccess } from '../access.js';
+import { paymentOutcome } from '../mercadopago.js';
+import { fail, MP_ERROR, ok, type Deps, type Result, type User } from './context.js';
 
 export async function getStatus(deps: Deps, user: User): Promise<Result> {
   const sub = await deps.repo.getByUser(user.id);

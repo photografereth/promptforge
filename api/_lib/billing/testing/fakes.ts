@@ -1,11 +1,11 @@
 import { vi, type Mock } from 'vitest';
-import { autoRecurringFor } from '../../plans';
-import type { EmailMessage, Mailer } from '../mailer';
-import type { MpAuthorizedPayment, MpClient, MpPreapproval } from '../mercadopago';
-import type { Deps } from '../service/context';
-import type { Subscription } from '../types';
-import { daysFromNow, NOW } from './fixtures';
-import { createMemoryRepo } from './memoryRepo';
+import { autoRecurringFor } from '../../plans.js';
+import type { EmailMessage, Mailer } from '../mailer.js';
+import type { MpAuthorizedPayment, MpClient, MpPreapproval } from '../mercadopago.js';
+import type { Deps } from '../service/context.js';
+import type { Subscription } from '../types.js';
+import { daysFromNow, NOW } from './fixtures.js';
+import { createMemoryRepo } from './memoryRepo.js';
 
 export const USER = { id: 'user-1', email: 'ana@example.com' };
 

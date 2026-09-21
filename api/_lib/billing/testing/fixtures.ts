@@ -1,4 +1,4 @@
-import type { Subscription } from '../types';
+import type { Subscription } from '../types.js';
 
 export const NOW = new Date('2026-09-18T12:00:00.000Z');
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createResendMailer, emails } from './mailer';
+import { createResendMailer, emails } from './mailer.js';
 
 describe('createResendMailer', () => {
   it('envia via API do Resend com bearer e destinatário', async () => {

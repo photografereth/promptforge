@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { authenticate } from '../_lib/auth';
-import { buildDeps } from '../_lib/billing/deps';
-import { routeBilling } from '../_lib/billing/router';
+import { authenticate } from '../_lib/auth.js';
+import { buildDeps } from '../_lib/billing/deps.js';
+import { routeBilling } from '../_lib/billing/router.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');

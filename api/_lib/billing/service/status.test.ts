@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { getInvoices, getStatus } from './status';
-import { makeAuthorizedPayment, makeDeps, USER } from '../testing/fakes';
-import { daysFromNow, makeSub } from '../testing/fixtures';
+import { getInvoices, getStatus } from './status.js';
+import { makeAuthorizedPayment, makeDeps, USER } from '../testing/fakes.js';
+import { daysFromNow, makeSub } from '../testing/fixtures.js';
 
 describe('getStatus', () => {
   it('sem assinatura', async () => {

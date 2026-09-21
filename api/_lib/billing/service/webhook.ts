@@ -1,9 +1,9 @@
-import { GRACE_DAYS, PLANS } from '../../plans';
-import { addDays } from '../access';
-import { emails } from '../mailer';
-import { paymentOutcome } from '../mercadopago';
-import type { Subscription } from '../types';
-import { canceledState, safeSend, type Deps } from './context';
+import { GRACE_DAYS, PLANS } from '../../plans.js';
+import { addDays } from '../access.js';
+import { emails } from '../mailer.js';
+import { paymentOutcome } from '../mercadopago.js';
+import type { Subscription } from '../types.js';
+import { canceledState, safeSend, type Deps } from './context.js';
 
 const AMOUNT_EPSILON = 0.005;
 const SUPPORTED = new Set(['subscription_preapproval', 'subscription_authorized_payment']);

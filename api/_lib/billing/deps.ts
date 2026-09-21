@@ -1,7 +1,7 @@
-import { createResendMailer } from './mailer';
-import { createMpClient } from './mercadopago';
-import { createSupabaseRepo } from './repo';
-import type { Deps } from './service/context';
+import { createResendMailer } from './mailer.js';
+import { createMpClient } from './mercadopago.js';
+import { createSupabaseRepo } from './repo.js';
+import type { Deps } from './service/context.js';
 
 function required(name: string): string {
   const value = process.env[name];

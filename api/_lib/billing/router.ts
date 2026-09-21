@@ -1,8 +1,8 @@
-import { cancelSubscription, changePlan, resumeSubscription, undoPlanChange, updateCard } from './service/manage';
-import { fail, ok, type Deps, type Result, type User } from './service/context';
-import { getInvoices, getStatus } from './service/status';
-import { subscribe } from './service/subscribe';
-import { withdraw } from './service/withdraw';
+import { cancelSubscription, changePlan, resumeSubscription, undoPlanChange, updateCard } from './service/manage.js';
+import { fail, ok, type Deps, type Result, type User } from './service/context.js';
+import { getInvoices, getStatus } from './service/status.js';
+import { subscribe } from './service/subscribe.js';
+import { withdraw } from './service/withdraw.js';
 
 type Body = Record<string, unknown>;
 type Handler = (deps: Deps, user: User, body: Body) => Promise<Result>;

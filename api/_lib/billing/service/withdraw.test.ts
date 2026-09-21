@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { withdraw } from './withdraw';
-import { makeDeps, USER } from '../testing/fakes';
-import { daysFromNow, makeSub, NOW } from '../testing/fixtures';
+import { withdraw } from './withdraw.js';
+import { makeDeps, USER } from '../testing/fakes.js';
+import { daysFromNow, makeSub, NOW } from '../testing/fixtures.js';
 
 describe('withdraw', () => {
   it('dentro de 7 dias: reembolsa a primeira cobrança, cancela a preapproval e revoga o acesso', async () => {

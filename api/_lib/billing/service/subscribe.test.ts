@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { subscribe } from './subscribe';
-import { makeDeps, USER } from '../testing/fakes';
-import { makeSub, daysFromNow } from '../testing/fixtures';
+import { subscribe } from './subscribe.js';
+import { makeDeps, USER } from '../testing/fakes.js';
+import { makeSub, daysFromNow } from '../testing/fixtures.js';
 
 const TOKEN = 'card-token-12345';
 

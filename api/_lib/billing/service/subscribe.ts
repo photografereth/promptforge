@@ -1,6 +1,6 @@
-import { autoRecurringFor, isPlanId, PLANS } from '../../plans';
-import type { Subscription } from '../types';
-import { fail, guard, idemKey, MP_ERROR, ok, type Deps, type Result, type User } from './context';
+import { autoRecurringFor, isPlanId, PLANS } from '../../plans.js';
+import type { Subscription } from '../types.js';
+import { fail, guard, idemKey, MP_ERROR, ok, type Deps, type Result, type User } from './context.js';
 
 const TEN_MIN = 10 * 60_000;
 

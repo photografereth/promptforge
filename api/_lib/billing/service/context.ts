@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import type { EmailMessage, Mailer } from '../mailer';
-import type { MpClient } from '../mercadopago';
-import type { BillingRepo, Subscription } from '../types';
+import type { EmailMessage, Mailer } from '../mailer.js';
+import type { MpClient } from '../mercadopago.js';
+import type { BillingRepo, Subscription } from '../types.js';
 
 export interface Deps {
   mp: MpClient;

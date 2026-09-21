@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { buildDeps } from '../_lib/billing/deps';
-import { safeEqual } from '../_lib/billing/safeEqual';
-import { runBillingCron } from '../_lib/billing/service/cron';
+import { buildDeps } from '../_lib/billing/deps.js';
+import { safeEqual } from '../_lib/billing/safeEqual.js';
+import { runBillingCron } from '../_lib/billing/service/cron.js';
 
 // A Vercel chama crons com GET e `Authorization: Bearer $CRON_SECRET`.
 export default async function handler(req: VercelRequest, res: VercelResponse) {

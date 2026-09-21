@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { canceledState, guard, idemKey, safeSend } from './context';
-import { makeDeps } from '../testing/fakes';
-import { makeSub, NOW } from '../testing/fixtures';
+import { canceledState, guard, idemKey, safeSend } from './context.js';
+import { makeDeps } from '../testing/fakes.js';
+import { makeSub, NOW } from '../testing/fixtures.js';
 
 describe('idemKey', () => {
   it('é determinística e sensível aos parâmetros', () => {

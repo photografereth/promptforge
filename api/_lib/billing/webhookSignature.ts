@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { safeEqual } from './safeEqual';
+import { safeEqual } from './safeEqual.js';
 
 export type SignatureResult =
   | { ok: true }

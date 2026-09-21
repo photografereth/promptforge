@@ -1,7 +1,7 @@
 import type { VercelResponse } from '@vercel/node';
-import type { AuthenticatedUser } from '../auth';
-import { decideAccess } from './accessGate';
-import { createSupabaseRepo } from './repo';
+import type { AuthenticatedUser } from '../auth.js';
+import { decideAccess } from './accessGate.js';
+import { createSupabaseRepo } from './repo.js';
 
 // Chamar logo após `authenticate`: `if (!(await requireActiveSubscription(user, res))) return;`
 export async function requireActiveSubscription(

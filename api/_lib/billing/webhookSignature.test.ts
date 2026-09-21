@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHmac } from 'node:crypto';
-import { verifyMpSignature } from './webhookSignature';
-import { safeEqual } from './safeEqual';
+import { verifyMpSignature } from './webhookSignature.js';
+import { safeEqual } from './safeEqual.js';
 
 const SECRET = 'segredo-de-teste';
 const NOW_MS = Date.UTC(2026, 8, 18, 12, 0, 0);

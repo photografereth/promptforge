@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '../supabaseAdmin';
-import { profileMirror } from './access';
-import type { BillingEventInput, BillingRepo, Subscription } from './types';
+import { supabaseAdmin } from '../supabaseAdmin.js';
+import { profileMirror } from './access.js';
+import type { BillingEventInput, BillingRepo, Subscription } from './types.js';
 
 const COLUMNS =
   'user_id, mp_preapproval_id, plan, status, current_period_end, cancel_at_period_end, ' +

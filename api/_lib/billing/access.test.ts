@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { hasAccess, checkWithdraw, profileMirror, addDays } from './access';
-import { makeSub, NOW, daysFromNow } from './testing/fixtures';
+import { hasAccess, checkWithdraw, profileMirror, addDays } from './access.js';
+import { makeSub, NOW, daysFromNow } from './testing/fixtures.js';
 
 describe('hasAccess', () => {
   it('nega sem assinatura', () => {

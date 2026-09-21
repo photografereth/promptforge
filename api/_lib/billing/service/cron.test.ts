@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { runBillingCron } from './cron';
-import { makeDeps, makePreapproval } from '../testing/fakes';
-import { daysFromNow, makeSub } from '../testing/fixtures';
+import { runBillingCron } from './cron.js';
+import { makeDeps, makePreapproval } from '../testing/fakes.js';
+import { daysFromNow, makeSub } from '../testing/fixtures.js';
 
 const cancelled = makePreapproval({ status: 'cancelled' });
 

@@ -1,4 +1,4 @@
-import type { PlanId } from './billing/types';
+import type { PlanId } from './billing/types.js';
 
 export const GRACE_DAYS = 7;
 export const WITHDRAW_DAYS = 7;

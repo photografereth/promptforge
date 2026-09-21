@@ -1,5 +1,5 @@
-import { WITHDRAW_DAYS } from '../plans';
-import type { PlanId, Subscription } from './types';
+import { WITHDRAW_DAYS } from '../plans.js';
+import type { PlanId, Subscription } from './types.js';
 
 const DAY_MS = 86_400_000;
 

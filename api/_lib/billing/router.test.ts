@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { routeBilling } from './router';
-import { makeDeps, USER } from './testing/fakes';
-import { makeSub } from './testing/fixtures';
+import { routeBilling } from './router.js';
+import { makeDeps, USER } from './testing/fakes.js';
+import { makeSub } from './testing/fixtures.js';
 
 describe('routeBilling', () => {
   it('404 para ação desconhecida (inclusive chaves de protótipo)', async () => {

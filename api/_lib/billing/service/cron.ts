@@ -1,7 +1,7 @@
-import { addDays } from '../access';
-import { emails } from '../mailer';
-import type { Subscription } from '../types';
-import { canceledState, cancelPreapproval, safeSend, type Deps } from './context';
+import { addDays } from '../access.js';
+import { emails } from '../mailer.js';
+import type { Subscription } from '../types.js';
+import { canceledState, cancelPreapproval, safeSend, type Deps } from './context.js';
 
 export interface CronSummary {
   canceledAtPeriodEnd: number;

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { handleWebhook, processAuthorizedPaymentEvent, processPreapprovalEvent } from './webhook';
-import { makeAuthorizedPayment, makeDeps, makePreapproval } from '../testing/fakes';
-import { daysFromNow, makeSub, NOW } from '../testing/fixtures';
+import { handleWebhook, processAuthorizedPaymentEvent, processPreapprovalEvent } from './webhook.js';
+import { makeAuthorizedPayment, makeDeps, makePreapproval } from '../testing/fakes.js';
+import { daysFromNow, makeSub, NOW } from '../testing/fixtures.js';
 
 describe('processPreapprovalEvent', () => {
   it('authorized: pending vira active e grava o fim do período nativo', async () => {

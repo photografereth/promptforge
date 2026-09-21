@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { cancelSubscription, changePlan, resumeSubscription, undoPlanChange, updateCard } from './manage';
-import { makeDeps, USER } from '../testing/fakes';
-import { daysFromNow, makeSub } from '../testing/fixtures';
+import { cancelSubscription, changePlan, resumeSubscription, undoPlanChange, updateCard } from './manage.js';
+import { makeDeps, USER } from '../testing/fakes.js';
+import { daysFromNow, makeSub } from '../testing/fixtures.js';
 
 const ANNUAL = { frequency: 1, frequency_type: 'years', transaction_amount: 948, currency_id: 'BRL' };
 const MONTHLY = { frequency: 1, frequency_type: 'months', transaction_amount: 119, currency_id: 'BRL' };

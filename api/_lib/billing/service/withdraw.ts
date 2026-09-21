@@ -1,7 +1,7 @@
-import { PLANS } from '../../plans';
-import { checkWithdraw } from '../access';
-import { emails } from '../mailer';
-import type { Subscription } from '../types';
+import { PLANS } from '../../plans.js';
+import { checkWithdraw } from '../access.js';
+import { emails } from '../mailer.js';
+import type { Subscription } from '../types.js';
 import {
   canceledState,
   cancelPreapproval,
@@ -14,7 +14,7 @@ import {
   type Deps,
   type Result,
   type User,
-} from './context';
+} from './context.js';
 
 const HOUR = 3_600_000;
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { autoRecurringFor, isPlanId, PLANS } from '../../plans';
-import { emails } from '../mailer';
+import { autoRecurringFor, isPlanId, PLANS } from '../../plans.js';
+import { emails } from '../mailer.js';
 import {
   canceledState,
   cancelPreapproval,
@@ -13,7 +13,7 @@ import {
   type Deps,
   type Result,
   type User,
-} from './context';
+} from './context.js';
 
 const TEN_MIN = 10 * 60_000;
 

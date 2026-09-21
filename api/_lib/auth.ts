@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAnon } from './supabaseAnon';
+import { supabaseAnon } from './supabaseAnon.js';
 
 export interface AuthenticatedUser {
   id: string;

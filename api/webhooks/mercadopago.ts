@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { buildDeps } from '../_lib/billing/deps';
-import { handleWebhook } from '../_lib/billing/service/webhook';
-import { verifyMpSignature } from '../_lib/billing/webhookSignature';
+import { buildDeps } from '../_lib/billing/deps.js';
+import { handleWebhook } from '../_lib/billing/service/webhook.js';
+import { verifyMpSignature } from '../_lib/billing/webhookSignature.js';
 
 function header(req: VercelRequest, name: string): string | undefined {
   const value = req.headers[name];
