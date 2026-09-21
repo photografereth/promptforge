@@ -27,8 +27,15 @@ describe('routeBilling', () => {
     expect(input.auto_recurring.transaction_amount).toBe(119);
     expect(input.external_reference).toBe('user-1');
   });
-  it('status funciona', async () => {
-    const { deps } = makeDeps({ subs: [makeSub()] });
+  it('DELETE change-plan desfaz a troca agendada; status funciona', async () => {
+    const { deps } = makeDeps({ subs: [makeSub({ pending_plan: 'annual' })] });
+    expect((await routeBilling(deps, USER, 'change-plan', 'DELETE', {})).status).toBe(200);
     expect((await routeBilling(deps, USER, 'status', 'GET', {})).body).toMatchObject({ status: 'active', pendingPlan: null });
+  });
+  it('roteia cancel e resume (POST) e recusa GET', async () => {
+    const { deps } = makeDeps({ subs: [makeSub()] });
+    expect((await routeBilling(deps, USER, 'cancel', 'POST', {})).body).toMatchObject({ cancelAtPeriodEnd: true });
+    expect((await routeBilling(deps, USER, 'resume', 'POST', {})).status).toBe(200);
+    expect((await routeBilling(deps, USER, 'cancel', 'GET', {})).status).toBe(405);
   });
 });

@@ -1,3 +1,4 @@
+import { cancelSubscription, changePlan, resumeSubscription, undoPlanChange, updateCard } from './service/manage';
 import { fail, ok, type Deps, type Result, type User } from './service/context';
 import { getInvoices, getStatus } from './service/status';
 import { subscribe } from './service/subscribe';
@@ -12,7 +13,13 @@ const ROUTES: Record<string, Partial<Record<string, Handler>>> = {
   invoices: { GET: (d, u) => getInvoices(d, u) },
   config: { GET: async (d) => ok({ publicKey: d.publicKey }) },
   subscribe: { POST: (d, u, b) => subscribe(d, u, { plan: b.plan, cardToken: b.cardToken }) },
-  // TODO(Task 9): change-plan (POST/DELETE), update-card, cancel e resume entram aqui após o Gate A.
+  'change-plan': {
+    POST: (d, u, b) => changePlan(d, u, { plan: b.plan }),
+    DELETE: (d, u) => undoPlanChange(d, u),
+  },
+  'update-card': { POST: (d, u, b) => updateCard(d, u, { cardToken: b.cardToken }) },
+  cancel: { POST: (d, u) => cancelSubscription(d, u) },
+  resume: { POST: (d, u) => resumeSubscription(d, u) },
   withdraw: { POST: (d, u) => withdraw(d, u) },
 };
 
