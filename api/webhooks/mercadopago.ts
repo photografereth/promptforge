@@ -31,9 +31,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
   if (!verified.ok) return res.status(401).json({ error: 'Assinatura inválida.' });
 
+  const type = String(body.type ?? '');
+  // Só tipo e id (nunca corpo/e-mail): ajuda a diagnosticar tópicos inesperados sem expor PII.
+  console.log('webhook recebido:', { type, dataId });
+
   try {
     const status = await handleWebhook(buildDeps(), {
-      type: String(body.type ?? ''),
+      type,
       dataId,
       requestId: requestId as string,
     });
