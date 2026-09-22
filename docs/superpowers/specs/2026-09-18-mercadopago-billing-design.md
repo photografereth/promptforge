@@ -316,3 +316,29 @@ Verificação feita em 2026-09-21 via MCP do Mercado Pago (`search_documentation
 | 6. `card_token_id` do Brick aceito no `POST` e no `PUT` (troca de cartão) | **CONFIRMADO** para o `PUT` ("Alterar cartão do meio de pagamento primário": PUT com `card_token_id`). | https://www.mercadopago.com/developers/pt/docs/subscriptions/subscription-management |
 
 Divergência a conferir: a doc escreve `status: canceled` no PUT de cancelamento; o código usa `cancelled` (grafia do `status` que a API devolve). Validar na Task 18.
+
+## Resultados da verificação (Task 18 — execução ao vivo, 2026-09-22)
+
+Teste manual real contra a conta de teste (vendedor `TESTUSER5878208842354201735`, app `1568410708207514`), branch `pilar2-mercadopago-billing` publicada num Preview da Vercel. Atualiza a tabela acima com fatos confirmados ao vivo (não mais só doc).
+
+| Item da tabela acima | Resultado ao vivo |
+|---|---|
+| 1. Gate A (`PUT` muda `frequency_type`/`transaction_amount`) | **CONFIRMADO.** `changePlan` (mensal→anual) e `undoPlanChange` (anual→mensal) retornaram `200` e gravaram `pending_plan` só depois do `PUT` ter sucesso — se o MP tivesse recusado, o código teria devolvido `502` antes de gravar qualquer coisa. Plano B (Task 9) não é necessário. |
+| 5. `next_payment_date` em `GET /preapproval` | **CONFIRMADO presente.** O cron de reconciliação usou esse campo para setar `current_period_end` exatamente 1 mês após a criação, sem nenhum ajuste manual. |
+| 6. `card_token_id` no `PUT` | **CONFIRMADO** repetidas vezes (troca de cartão funcionou, `mp_preapproval_id` nunca mudou). |
+| status `cancelled` (não `canceled`) | **CONFIRMADO.** É o valor usado com sucesso em todas as chamadas de cancelamento (cron e `cancelPreapproval`). |
+| 2–4 (`authorized_payments/{id}`, `/search`, reembolso) | **AINDA NÃO CONFIRMADO.** Nunca tivemos uma cobrança real (`first_payment_id` ficou `null` do início ao fim do ciclo de testes) — sem cobrança, sem `authorized_payment` para consultar e sem nada a reembolsar. Cobre `Task 10`/`Task 18 Step 8` (arrependimento) e `Step 11` (faturas): validados só por teste unitário, não ao vivo. |
+
+### Achado maior, fora do escopo original da Task 1: mecanismo de entrega do webhook
+
+1. **A tela "Webhooks" do painel do Mercado Pago não vale para Assinaturas.** Confirmado na doc oficial (aviso específico tag `[mlb]`): *"Este método de configuração não está disponível para integrações com QR Code e nem Assinaturas."* Configurar lá não tem efeito nenhum — é preciso enviar `notification_url` no corpo de cada `POST /preapproval` e `PUT /preapproval` (implementado: `Deps.notificationUrl`, usado em `subscribe.ts`, `manage.ts` e `cancelPreapproval`).
+2. **Mesmo com `notification_url` correto, o MP não dispara `subscription_preapproval`/`subscription_authorized_payment` em toda mutação.** Ao longo do ciclo de testes:
+   - Criar e trocar cartão geraram eventos do tópico **`payment`** (não documentado como "de assinatura" à primeira vista, mas confirmado na doc que também é usado por Assinaturas) — sempre `transaction_amount: 0` (verificação de cartão, não cobrança), sem `external_reference`.
+   - Só o **cancelamento** dessa preapproval gerou, uma vez, um `subscription_preapproval` de verdade.
+   - `subscription_authorized_payment` **nunca** foi observado (exigiria uma cobrança real, que não ocorreu no ciclo de testes).
+3. **`api/webhooks/mercadopago.ts` agora processa `payment` de verdade** (`processPaymentEvent`, Task 18 pós-hoc): correlaciona pelo `external_reference` (não pelo `preapproval_id`, que o objeto de pagamento não expõe), ignora silenciosamente valor zero (ruído esperado de verificação de cartão), e aplica as mesmas regras de negócio de `processAuthorizedPaymentEvent` quando o valor é real.
+4. **Pendência para a primeira cobrança real de produção:** confirmar que um `payment` (ou `subscription_authorized_payment`) com valor > 0 é processado corretamente — `first_charge_at`/`first_payment_id` nunca foram preenchidos neste ciclo. Verificar no primeiro mês real de operação.
+
+### Risco de infraestrutura, não do Mercado Pago
+
+O teste rodou atrás da **Vercel Authentication** (Deployment Protection) do Preview, que bloquearia o Mercado Pago de chamar o webhook. Contornado com um segredo de bypass **embutido na URL enviada ao MP** (`MP_NOTIFICATION_URL_OVERRIDE`, só em Preview). **Isso não deve ir para produção como está** — o Pilar 4 (deploy) deve anexar um domínio próprio à produção, que a própria Vercel isenta da Deployment Protection (`ssoProtection.deploymentType: "all_except_custom_domains"`, confirmado nas configurações do projeto), eliminando a necessidade do bypass.
