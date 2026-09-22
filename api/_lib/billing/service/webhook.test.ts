@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { handleWebhook, processAuthorizedPaymentEvent, processPreapprovalEvent } from './webhook.js';
-import { makeAuthorizedPayment, makeDeps, makePreapproval } from '../testing/fakes.js';
+import { handleWebhook, processAuthorizedPaymentEvent, processPaymentEvent, processPreapprovalEvent } from './webhook.js';
+import { makeAuthorizedPayment, makeDeps, makePayment, makePreapproval } from '../testing/fakes.js';
 import { daysFromNow, makeSub, NOW } from '../testing/fixtures.js';
 
 describe('processPreapprovalEvent', () => {
@@ -143,12 +143,84 @@ describe('processAuthorizedPaymentEvent', () => {
   });
 });
 
+// Tópico `payment`: confirmado empiricamente (Task 18) que o MP o usa também para Assinaturas —
+// tanto para verificações de cartão (transaction_amount 0, sem external_reference) quanto,
+// presumivelmente, para cobranças reais (a confirmar em produção; tratado aqui do mesmo jeito
+// que subscription_authorized_payment, correlacionado por external_reference em vez de preapproval_id).
+describe('processPaymentEvent', () => {
+  it('valor zero (verificação de cartão): ignora sem registrar nada', async () => {
+    const { deps, mp, repo } = makeDeps({ subs: [makeSub()] });
+    mp.getPayment.mockResolvedValueOnce(makePayment({ transaction_amount: 0, external_reference: undefined }));
+    await processPaymentEvent(deps, 'pay_1');
+    expect(repo.events).toHaveLength(0);
+  });
+
+  it('status intermediário (ex.: in_process): ignora', async () => {
+    const { deps, mp, repo } = makeDeps({ subs: [makeSub()] });
+    mp.getPayment.mockResolvedValueOnce(makePayment({ status: 'in_process' }));
+    await processPaymentEvent(deps, 'pay_1');
+    expect(repo.events).toHaveLength(0);
+  });
+
+  it('sem external_reference (e valor > 0): registra órfão', async () => {
+    const { deps, mp, repo } = makeDeps({ subs: [makeSub()] });
+    mp.getPayment.mockResolvedValueOnce(makePayment({ external_reference: undefined }));
+    await processPaymentEvent(deps, 'pay_1');
+    expect(repo.events.map((e) => e.action)).toContain('webhook.payment_no_reference');
+  });
+
+  it('usuário sem assinatura: registra órfão', async () => {
+    const { deps, repo } = makeDeps();
+    await processPaymentEvent(deps, 'pay_1');
+    expect(repo.events.map((e) => e.action)).toContain('webhook.orphan_payment');
+  });
+
+  it('aprovado: pending vira active, grava primeira cobrança e envia recibo', async () => {
+    const { deps, repo, mailer } = makeDeps({
+      subs: [makeSub({ status: 'pending', current_period_end: null, first_charge_at: null, first_payment_id: null })],
+    });
+    await processPaymentEvent(deps, 'pay_1');
+    expect(await repo.getByUser('user-1')).toMatchObject({
+      status: 'active',
+      first_charge_at: NOW.toISOString(),
+      first_payment_id: '555',
+      current_period_end: daysFromNow(27),
+    });
+    expect(mailer.sent[0].message.subject).toBe('Recibo da sua assinatura');
+  });
+
+  it('valor divergente do plano: não libera acesso e registra a divergência', async () => {
+    const { deps, mp, repo } = makeDeps({ subs: [makeSub({ status: 'pending', current_period_end: null })] });
+    mp.getPayment.mockResolvedValueOnce(makePayment({ transaction_amount: 1 }));
+    await processPaymentEvent(deps, 'pay_1');
+    expect((await repo.getByUser('user-1'))?.status).toBe('pending');
+    expect(repo.events.map((e) => e.action)).toContain('reconcile.amount_mismatch');
+  });
+
+  it('recusado: past_due com carência e um único e-mail', async () => {
+    const { deps, mp, repo, mailer } = makeDeps({ subs: [makeSub()] });
+    mp.getPayment.mockResolvedValue(makePayment({ status: 'rejected' }));
+    await processPaymentEvent(deps, 'pay_1');
+    expect(await repo.getByUser('user-1')).toMatchObject({ status: 'past_due', grace_until: daysFromNow(7) });
+    expect(mailer.sent[0].message.subject).toBe('Não conseguimos processar a cobrança da sua assinatura');
+    await processPaymentEvent(deps, 'pay_1');
+    expect(mailer.sent).toHaveLength(1);
+  });
+
+  it('aprovado para assinatura cancelada: não reativa', async () => {
+    const { deps, repo } = makeDeps({ subs: [makeSub({ status: 'canceled' })] });
+    await processPaymentEvent(deps, 'pay_1');
+    expect((await repo.getByUser('user-1'))?.status).toBe('canceled');
+    expect(repo.events.map((e) => e.action)).toContain('webhook.paid_after_cancel');
+  });
+});
+
 describe('handleWebhook', () => {
   const evt = { type: 'subscription_preapproval', dataId: 'pre_1', requestId: 'req-1' };
 
   it('ignora tópicos não suportados e id vazio', async () => {
     const { deps, mp } = makeDeps();
-    expect(await handleWebhook(deps, { ...evt, type: 'payment' })).toBe(200);
+    expect(await handleWebhook(deps, { ...evt, type: 'merchant_order' })).toBe(200);
     expect(await handleWebhook(deps, { ...evt, dataId: '' })).toBe(200);
     expect(mp.getPreapproval).not.toHaveBeenCalled();
   });
@@ -166,6 +238,12 @@ describe('handleWebhook', () => {
     const { deps, mp } = makeDeps({ subs: [makeSub()] });
     await handleWebhook(deps, { type: 'subscription_authorized_payment', dataId: 'ap_1', requestId: 'r' });
     expect(mp.getAuthorizedPayment).toHaveBeenCalledWith('ap_1');
+  });
+
+  it('roteia payment', async () => {
+    const { deps, mp } = makeDeps({ subs: [makeSub()] });
+    await handleWebhook(deps, { type: 'payment', dataId: 'pay_1', requestId: 'r' });
+    expect(mp.getPayment).toHaveBeenCalledWith('pay_1');
   });
 
   it('falha no processamento devolve 500 e libera a chave para o reenvio', async () => {

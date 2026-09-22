@@ -1,7 +1,7 @@
 import { vi, type Mock } from 'vitest';
 import { autoRecurringFor } from '../../plans.js';
 import type { EmailMessage, Mailer } from '../mailer.js';
-import type { MpAuthorizedPayment, MpClient, MpPreapproval } from '../mercadopago.js';
+import type { MpAuthorizedPayment, MpClient, MpPayment, MpPreapproval } from '../mercadopago.js';
 import type { Deps } from '../service/context.js';
 import type { Subscription } from '../types.js';
 import { daysFromNow, NOW } from './fixtures.js';
@@ -35,13 +35,26 @@ export function makeAuthorizedPayment(overrides: Partial<MpAuthorizedPayment> = 
   };
 }
 
+// Tópico `payment` (ver Task 18): usado tanto para verificações de cartão (transaction_amount: 0,
+// sem external_reference) quanto, presumivelmente, para cobranças reais de assinatura.
+export function makePayment(overrides: Partial<MpPayment> = {}): MpPayment {
+  return {
+    id: 555,
+    status: 'approved',
+    status_detail: 'accredited',
+    external_reference: 'user-1',
+    transaction_amount: 119,
+    ...overrides,
+  };
+}
+
 export function createFakeMp(): FakeMp {
   return {
     createPreapproval: vi.fn<MpClient['createPreapproval']>(async () => makePreapproval({ next_payment_date: null })),
     getPreapproval: vi.fn<MpClient['getPreapproval']>(async () => makePreapproval()),
     updatePreapproval: vi.fn<MpClient['updatePreapproval']>(async () => makePreapproval()),
     getAuthorizedPayment: vi.fn<MpClient['getAuthorizedPayment']>(async () => makeAuthorizedPayment()),
-    getPayment: vi.fn<MpClient['getPayment']>(async () => ({ id: 555, status: 'approved' })),
+    getPayment: vi.fn<MpClient['getPayment']>(async () => makePayment()),
     searchAuthorizedPayments: vi.fn<MpClient['searchAuthorizedPayments']>(async () => []),
     refundPayment: vi.fn<MpClient['refundPayment']>(async () => ({ id: 1 })),
   };
