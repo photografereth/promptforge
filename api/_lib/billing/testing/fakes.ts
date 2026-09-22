@@ -41,6 +41,7 @@ export function createFakeMp(): FakeMp {
     getPreapproval: vi.fn<MpClient['getPreapproval']>(async () => makePreapproval()),
     updatePreapproval: vi.fn<MpClient['updatePreapproval']>(async () => makePreapproval()),
     getAuthorizedPayment: vi.fn<MpClient['getAuthorizedPayment']>(async () => makeAuthorizedPayment()),
+    getPayment: vi.fn<MpClient['getPayment']>(async () => ({ id: 555, status: 'approved' })),
     searchAuthorizedPayments: vi.fn<MpClient['searchAuthorizedPayments']>(async () => []),
     refundPayment: vi.fn<MpClient['refundPayment']>(async () => ({ id: 1 })),
   };

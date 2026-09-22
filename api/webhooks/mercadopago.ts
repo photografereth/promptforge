@@ -35,8 +35,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Só tipo e id (nunca corpo/e-mail): ajuda a diagnosticar tópicos inesperados sem expor PII.
   console.log('webhook recebido:', { type, dataId });
 
+  const deps = buildDeps();
+
+  // DIAGNÓSTICO TEMPORÁRIO (Task 18): o tópico `payment` chega para Assinaturas (confirmado
+  // empiricamente) mas ainda não é processado pelo fluxo principal. Loga só campos não sensíveis
+  // para descobrir a forma da resposta antes de decidir como tratá-lo. Nunca falha o webhook.
+  if (type === 'payment' && dataId) {
+    try {
+      const payment = await deps.mp.getPayment(dataId);
+      console.log('payment (diagnóstico):', {
+        status: payment.status,
+        status_detail: payment.status_detail ?? null,
+        has_external_reference: Boolean(payment.external_reference),
+        transaction_amount: payment.transaction_amount ?? null,
+        point_of_interaction_type: payment.point_of_interaction?.type ?? null,
+      });
+    } catch (error) {
+      console.error('payment (diagnóstico) falhou:', error instanceof Error ? error.name : 'unknown');
+    }
+  }
+
   try {
-    const status = await handleWebhook(buildDeps(), {
+    const status = await handleWebhook(deps, {
       type,
       dataId,
       requestId: requestId as string,

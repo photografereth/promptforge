@@ -23,6 +23,21 @@ export interface MpAuthorizedPayment {
   payment?: { id: number | string; status: string };
 }
 
+// Resposta de GET /v1/payments/{id} (API genérica de Pagamentos). O tópico `payment` também é
+// usado pelo MP para Assinaturas (confirmado na doc oficial e empiricamente: card token updates
+// e cobranças de assinatura chegam como `payment`, não só `subscription_authorized_payment`).
+// Campos não usados aqui são omitidos de propósito (nunca logamos o corpo bruto).
+export interface MpPayment {
+  id: number | string;
+  status: string;
+  status_detail?: string;
+  external_reference?: string | null;
+  transaction_amount?: number;
+  // Campo por onde a API expõe o vínculo com a assinatura, quando o pagamento vem de uma cobrança
+  // de preapproval (a confirmar empiricamente — ver diagnóstico em webhooks/mercadopago.ts).
+  point_of_interaction?: { type?: string } | null;
+}
+
 export interface MpCreatePreapproval {
   reason: string;
   external_reference: string;
@@ -48,6 +63,8 @@ export interface MpClient {
   getAuthorizedPayment(id: string): Promise<MpAuthorizedPayment>;
   searchAuthorizedPayments(preapprovalId: string): Promise<MpAuthorizedPayment[]>;
   refundPayment(paymentId: string, idempotencyKey: string): Promise<{ id: number | string }>;
+  // Diagnóstico do tópico `payment` (ver MpPayment). Ainda não usado no fluxo principal.
+  getPayment(id: string): Promise<MpPayment>;
 }
 
 // O corpo da resposta de erro pode conter dados pessoais: não entra na mensagem.
@@ -81,6 +98,7 @@ export function createMpClient(accessToken: string, fetchImpl: typeof fetch = fe
     getPreapproval: (id) => call('GET', `/preapproval/${encodeURIComponent(id)}`),
     updatePreapproval: (id, body, key) => call('PUT', `/preapproval/${encodeURIComponent(id)}`, body, key),
     getAuthorizedPayment: (id) => call('GET', `/authorized_payments/${encodeURIComponent(id)}`),
+    getPayment: (id) => call('GET', `/v1/payments/${encodeURIComponent(id)}`),
     async searchAuthorizedPayments(preapprovalId) {
       const res = await call<{ results?: MpAuthorizedPayment[] }>(
         'GET',
