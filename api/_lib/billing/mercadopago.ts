@@ -30,6 +30,7 @@ export interface MpCreatePreapproval {
   card_token_id: string;
   auto_recurring: MpAutoRecurring;
   back_url: string;
+  notification_url: string;
   status: 'authorized';
 }
 
@@ -37,6 +38,7 @@ export type MpUpdatePreapproval = {
   auto_recurring?: MpAutoRecurring;
   card_token_id?: string;
   status?: 'cancelled';
+  notification_url?: string;
 };
 
 export interface MpClient {

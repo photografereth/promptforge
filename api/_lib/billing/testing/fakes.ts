@@ -74,6 +74,7 @@ export function makeDeps(opts: { subs?: Subscription[] } = {}) {
     now: clock,
     appUrl: 'https://app.example.com',
     publicKey: 'public-key-de-teste',
+    notificationUrl: 'https://app.example.com/api/webhooks/mercadopago',
   };
   return {
     deps,

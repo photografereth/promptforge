@@ -9,7 +9,11 @@ describe('withdraw', () => {
     const res = await withdraw(deps, USER);
     expect(res).toEqual({ status: 200, body: { ok: true, status: 'canceled' } });
     expect(mp.refundPayment).toHaveBeenCalledWith('999', expect.any(String));
-    expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { status: 'cancelled' }, expect.any(String));
+    expect(mp.updatePreapproval).toHaveBeenCalledWith(
+      'pre_1',
+      { status: 'cancelled', notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+      expect.any(String)
+    );
     expect(await repo.getByUser('user-1')).toMatchObject({ status: 'canceled', refunded_at: NOW.toISOString() });
     expect(repo.events.map((e) => e.action)).toContain('withdraw');
     expect(mailer.sent[0].message.subject).toBe('Reembolso concluído');

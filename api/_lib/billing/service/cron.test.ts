@@ -12,7 +12,11 @@ describe('runBillingCron', () => {
     const summary = await runBillingCron(deps);
     expect(summary).toEqual({ canceledAtPeriodEnd: 1, graceExpired: 0, reconciled: 0, errors: 0 });
     expect(mp.updatePreapproval).toHaveBeenCalledTimes(1);
-    expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { status: 'cancelled' }, expect.any(String));
+    expect(mp.updatePreapproval).toHaveBeenCalledWith(
+      'pre_1',
+      { status: 'cancelled', notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+      expect.any(String)
+    );
     expect(await repo.getByUser('user-1')).toMatchObject({ status: 'canceled', cancel_at_period_end: false });
     expect(repo.events.map((e) => e.action)).toContain('cron.cancel_at_period_end');
     expect(mailer.sent).toHaveLength(1);
@@ -38,7 +42,11 @@ describe('runBillingCron', () => {
     const { deps, mp, repo } = makeDeps({ subs: [makeSub({ status: 'canceled' })] });
     const summary = await runBillingCron(deps);
     expect(summary.reconciled).toBe(1);
-    expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { status: 'cancelled' }, expect.any(String));
+    expect(mp.updatePreapproval).toHaveBeenCalledWith(
+      'pre_1',
+      { status: 'cancelled', notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+      expect.any(String)
+    );
     expect(repo.events.map((e) => e.action)).toContain('reconcile.cancel_in_mp');
   });
 

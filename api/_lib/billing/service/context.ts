@@ -10,6 +10,10 @@ export interface Deps {
   now: () => Date;
   appUrl: string;
   publicKey: string;
+  // Assinaturas não usam a config de Webhooks do painel do Mercado Pago (confirmado na doc
+  // oficial: "não está disponível para integrações com QR Code e nem Assinaturas"). Por isso
+  // toda criação/atualização de preapproval envia este campo explicitamente.
+  notificationUrl: string;
 }
 
 export interface User {
@@ -77,5 +81,9 @@ export function canceledState(sub: Subscription): Subscription {
 
 export function cancelPreapproval(deps: Deps, sub: Subscription, tag: string): Promise<unknown> {
   const id = sub.mp_preapproval_id as string;
-  return deps.mp.updatePreapproval(id, { status: 'cancelled' }, idemKey(sub.user_id, tag, id));
+  return deps.mp.updatePreapproval(
+    id,
+    { status: 'cancelled', notification_url: deps.notificationUrl },
+    idemKey(sub.user_id, tag, id)
+  );
 }

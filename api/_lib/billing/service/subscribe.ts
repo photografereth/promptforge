@@ -31,6 +31,7 @@ export async function subscribe(
         card_token_id: cardToken,
         auto_recurring: autoRecurringFor(plan),
         back_url: `${deps.appUrl}/subscription/confirm`,
+        notification_url: deps.notificationUrl,
         status: 'authorized',
       },
       // O token é de uso único: a mesma tentativa repetida cai na mesma chave.

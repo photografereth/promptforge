@@ -12,7 +12,11 @@ describe('changePlan', () => {
     const { deps, mp, repo, mailer } = makeDeps({ subs: [sub] });
     const res = await changePlan(deps, USER, { plan: 'annual' });
     expect(res).toEqual({ status: 200, body: { ok: true, pendingPlan: 'annual', effectiveAt: sub.current_period_end } });
-    expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { auto_recurring: ANNUAL }, expect.any(String));
+    expect(mp.updatePreapproval).toHaveBeenCalledWith(
+      'pre_1',
+      { auto_recurring: ANNUAL, notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+      expect.any(String)
+    );
     expect(await repo.getByUser('user-1')).toMatchObject({
       plan: 'monthly',
       status: 'active',
@@ -45,7 +49,11 @@ describe('undoPlanChange', () => {
     const sub = makeSub({ pending_plan: 'annual', pending_plan_effective_at: daysFromNow(27) });
     const { deps, mp, repo } = makeDeps({ subs: [sub] });
     expect((await undoPlanChange(deps, USER)).status).toBe(200);
-    expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { auto_recurring: MONTHLY }, expect.any(String));
+    expect(mp.updatePreapproval).toHaveBeenCalledWith(
+      'pre_1',
+      { auto_recurring: MONTHLY, notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+      expect.any(String)
+    );
     expect(await repo.getByUser('user-1')).toMatchObject({ pending_plan: null, pending_plan_effective_at: null });
   });
   it('409 quando não há troca agendada', async () => {
@@ -58,7 +66,11 @@ describe('updateCard', () => {
     for (const status of ['active', 'past_due'] as const) {
       const { deps, mp, repo } = makeDeps({ subs: [makeSub({ status })] });
       expect((await updateCard(deps, USER, { cardToken: 'novo-token-1234' })).status).toBe(200);
-      expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { card_token_id: 'novo-token-1234' }, expect.any(String));
+      expect(mp.updatePreapproval).toHaveBeenCalledWith(
+        'pre_1',
+        { card_token_id: 'novo-token-1234', notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+        expect.any(String)
+      );
       expect(repo.events.map((e) => e.action)).toContain('update_card');
     }
   });
@@ -90,7 +102,11 @@ describe('cancelSubscription', () => {
   it('past_due: cancela de verdade no MP e encerra o acesso', async () => {
     const { deps, mp, repo } = makeDeps({ subs: [makeSub({ status: 'past_due', grace_until: daysFromNow(3) })] });
     expect((await cancelSubscription(deps, USER)).body).toMatchObject({ status: 'canceled' });
-    expect(mp.updatePreapproval).toHaveBeenCalledWith('pre_1', { status: 'cancelled' }, expect.any(String));
+    expect(mp.updatePreapproval).toHaveBeenCalledWith(
+      'pre_1',
+      { status: 'cancelled', notification_url: 'https://app.example.com/api/webhooks/mercadopago' },
+      expect.any(String)
+    );
     expect(await repo.getByUser('user-1')).toMatchObject({ status: 'canceled', grace_until: null });
   });
   it('409 sem assinatura cancelável', async () => {

@@ -12,7 +12,7 @@ describe('createMpClient', () => {
     const f = fakeFetch(201, { id: 'pre_1', status: 'authorized' });
     const mp = createMpClient('tok-secreto', f);
     const res = await mp.createPreapproval(
-      { reason: 'r', external_reference: 'u1', payer_email: 'a@b.c', card_token_id: 'ct', auto_recurring: recurring, back_url: 'https://x/y', status: 'authorized' },
+      { reason: 'r', external_reference: 'u1', payer_email: 'a@b.c', card_token_id: 'ct', auto_recurring: recurring, back_url: 'https://x/y', notification_url: 'https://x/api/webhooks/mercadopago', status: 'authorized' },
       'idem-1'
     );
     expect(res.id).toBe('pre_1');

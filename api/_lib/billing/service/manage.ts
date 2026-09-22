@@ -45,7 +45,7 @@ export async function changePlan(deps: Deps, user: User, input: { plan?: unknown
   try {
     await deps.mp.updatePreapproval(
       sub.mp_preapproval_id,
-      { auto_recurring: autoRecurringFor(plan) },
+      { auto_recurring: autoRecurringFor(plan), notification_url: deps.notificationUrl },
       freshKey(user.id, 'change-plan', plan)
     );
   } catch {
@@ -82,7 +82,7 @@ export async function undoPlanChange(deps: Deps, user: User): Promise<Result> {
   try {
     await deps.mp.updatePreapproval(
       sub.mp_preapproval_id,
-      { auto_recurring: autoRecurringFor(sub.plan) },
+      { auto_recurring: autoRecurringFor(sub.plan), notification_url: deps.notificationUrl },
       freshKey(user.id, 'undo-plan-change', sub.plan)
     );
   } catch {
@@ -117,7 +117,7 @@ export async function updateCard(deps: Deps, user: User, input: { cardToken?: un
   try {
     await deps.mp.updatePreapproval(
       sub.mp_preapproval_id,
-      { card_token_id: cardToken },
+      { card_token_id: cardToken, notification_url: deps.notificationUrl },
       idemKey(user.id, 'update-card', cardToken)
     );
   } catch {
