@@ -158,23 +158,19 @@ por chave primária).
 
 ### Frontend
 
-`src/lib/apiFetch.ts` já dispara `SUBSCRIPTION_REQUIRED_EVENT` em 403 com
-`code: "subscription_required"`. Acrescenta o mesmo padrão para 429:
+Nenhuma mudança necessária. As 4 telas que chamam rotas de IA
+(`App.tsx` para `enhance`/`autofill`, `ReferenceUploadSection.tsx` para
+`analyze-references`, `ImportProductModal.tsx` para `parse-product-url`)
+já seguem o mesmo padrão: `if (!response.ok) throw new Error(body.error)`,
+capturado e exibido como mensagem de erro na tela. Um 429 do
+`requireQuota` cai nesse fluxo existente automaticamente — só a mensagem
+em `error` (definida no backend, seção acima) precisa ser clara o
+suficiente para aparecer sozinha.
 
-```ts
-export const QUOTA_EXCEEDED_EVENT = 'billing:quota-exceeded';
-// ...
-if (res.status === 429) {
-  res.clone().json().then((body) => {
-    if (body?.code === 'quota_exceeded') {
-      window.dispatchEvent(new CustomEvent(QUOTA_EXCEEDED_EVENT, { detail: body }));
-    }
-  }).catch(() => {});
-}
-```
-
-Um listener novo (componente leve, não uma tela nova) mostra um toast
-com `body.resetAt` formatado. Sem mudança nas telas existentes.
+`SUBSCRIPTION_REQUIRED_EVENT` (em `src/lib/apiFetch.ts`) existe por um
+motivo específico — disparar um re-fetch do estado da assinatura para
+atualizar o paywall — que não se aplica aqui: quota estourada não muda
+nenhum estado persistente de UI, é só um erro transitório da chamada.
 
 ## Testes
 
