@@ -6,11 +6,10 @@ import { requireQuota } from './_lib/billing/requireQuota.js';
 import { getGemini, generateWithFallback } from './_lib/gemini.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!(await requireIpRateLimit(req, res))) return;
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido.' });
   }
+  if (!(await requireIpRateLimit(req, res))) return;
 
   const user = await authenticate(req, res);
   if (!user) return;

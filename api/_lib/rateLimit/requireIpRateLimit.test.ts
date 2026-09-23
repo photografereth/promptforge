@@ -40,7 +40,7 @@ describe('requireIpRateLimit', () => {
     expect(body.code).toBe('rate_limited');
   });
 
-  it('responde 429 também quando o repo falha (falha fechada)', async () => {
+  it('responde 503 (não 429) quando o repo falha — falha fechada, mas visível como erro de servidor', async () => {
     const repo = createMemoryRepo();
     repo.incrementAndGetCount = async () => {
       throw new Error('db fora do ar');
@@ -50,6 +50,6 @@ describe('requireIpRateLimit', () => {
     const allowed = await requireIpRateLimit(fakeReq('203.0.113.5'), res, repo, NOW);
 
     expect(allowed).toBe(false);
-    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.status).toHaveBeenCalledWith(503);
   });
 });
