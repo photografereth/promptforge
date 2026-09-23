@@ -60,6 +60,28 @@ Domínio com SPF/DKIM verificados e `MAIL_FROM` desse domínio. Para o teste, o 
 Cadastrar no app com o **e-mail do comprador de teste**. Se o Supabase exigir confirmação de e-mail, desligar a confirmação
 no projeto de teste (o e-mail fictício não recebe mensagens).
 
+## 2026-09-22 update: domínio 3dco.com.br verificado no Resend e anexado à produção
+
+Domínio `3dco.com.br` usado temporariamente para validar o passo 7 (e-mail/Resend) acima.
+Registros DNS criados no painel do registro.br (modo avançado): `TXT resend._domainkey`
+(DKIM), `CNAME send` (SPF/recebimento), `CNAME rsend` (envio) e `TXT _dmarc` (`p=none`).
+Painel do Resend confirmou **Verified** em 2026-09-23 01:49 (região `sa-east-1`).
+
+Como o domínio já estava disponível, também foi usado para resolver o bloqueio de
+Deployment Protection do MP (ver seção "Vercel/GitHub infra confirmado" no
+[[project_pilar2_billing_status]]): anexado ao projeto Vercel como domínio de
+**Production** (`A @ → 76.76.21.21`, Vercel sinalizou depois que `216.198.79.1` é o
+IP mais novo recomendado — o antigo continua funcionando, troca é opcional).
+
+`MP_NOTIFICATION_URL_OVERRIDE` (Vercel, produção + preview) passou a apontar para
+`https://3dco.com.br/api/webhooks/mercadopago`, sem mais o segredo de bypass da Vercel
+embutido na URL (esse hack só existia porque o `APP_URL` continua sendo o alias
+`.vercel.app`, que ainda tem Deployment Protection). `APP_URL` **não** foi alterado —
+o domínio próprio por enquanto só cobre o webhook do MP e o envio de e-mail, não virou
+a URL principal do app. Redeploy de produção feito para aplicar a env var
+(`dpl_7g6eYjws12TRQRpZu3eU3cyBDqBy`), confirmado com `/api/health` respondendo via
+`https://3dco.com.br` e o webhook retornando 401 (assinatura ausente) em vez de 500.
+
 ## Depois: rodar a Task 18 do plano (Steps 1–13)
 Pontos que o teste precisa responder (registrados no spec, "Resultados da verificação"):
 - Gate B: `PUT /preapproval` aceita `months → years` e `119 → 948`?
