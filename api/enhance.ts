@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { authenticate } from './_lib/auth.js';
 import { requireActiveSubscription } from './_lib/billing/requireSubscription.js';
+import { requireQuota } from './_lib/billing/requireQuota.js';
 import { getGemini, generateWithFallback } from './_lib/gemini.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -11,6 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await authenticate(req, res);
   if (!user) return;
   if (!(await requireActiveSubscription(user, res))) return;
+  if (!(await requireQuota(user, res))) return;
 
   const { prompt, mode, agent = 'ugc', product = {}, meta } = req.body ?? {};
 

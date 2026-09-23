@@ -1,4 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
+import { pickModelOrder } from './quota/circuitBreaker.js';
+import { createSupabaseCircuitBreakerRepo } from './quota/circuitBreakerRepo.js';
+import type { CircuitBreakerRepo } from './quota/types.js';
 
 export function getGemini(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -15,17 +18,17 @@ export function getGemini(): GoogleGenAI {
   });
 }
 
-// Nota: este estado vive na memória do processo da função serverless. Em cold starts
-// da Vercel, uma nova invocação pode não compartilhar essa memória, então o circuit
-// breaker perde efeito entre invocações frias — limitação conhecida, resolvida de
-// verdade só quando o Pilar 3 introduzir estado compartilhado (quota/fila).
-let lastGeminiHighDemandTime = 0;
-
-function getPreferredModels(): string[] {
-  if (Date.now() - lastGeminiHighDemandTime < 180000) {
-    return ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+// Estado do circuit breaker agora vive no Postgres (public.gemini_circuit_breaker),
+// compartilhado entre invocações — sobrevive a cold starts da Vercel. Falhas ao
+// ler/escrever esse estado nunca devem impedir a chamada real ao Gemini: sempre
+// cai de volta pra ordem padrão de modelos.
+async function getPreferredModels(repo: CircuitBreakerRepo): Promise<string[]> {
+  try {
+    return pickModelOrder(await repo.getLastHighDemandAt(), new Date());
+  } catch (err) {
+    console.warn('Aviso: falha ao ler o circuit breaker do Gemini, usando ordem padrão:', err);
+    return pickModelOrder(null, new Date());
   }
-  return ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
 }
 
 export async function generateWithFallback(
@@ -34,9 +37,10 @@ export async function generateWithFallback(
     contents: any;
     config?: any;
   },
-  timeoutMs = 18000
+  timeoutMs = 18000,
+  breakerRepo: CircuitBreakerRepo = createSupabaseCircuitBreakerRepo()
 ): Promise<any> {
-  const models = getPreferredModels();
+  const models = await getPreferredModels(breakerRepo);
   let lastError: any = null;
 
   for (const modelName of models) {
@@ -65,7 +69,11 @@ export async function generateWithFallback(
         msg.includes('RESOURCE_EXHAUSTED') ||
         msg.includes('429')
       ) {
-        lastGeminiHighDemandTime = Date.now();
+        try {
+          await breakerRepo.setHighDemandNow(new Date().toISOString());
+        } catch (breakerErr) {
+          console.warn('Aviso: falha ao registrar alta demanda do Gemini no circuit breaker:', breakerErr);
+        }
       }
     }
   }
