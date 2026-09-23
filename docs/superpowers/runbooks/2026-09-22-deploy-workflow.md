@@ -25,10 +25,11 @@ abre exceção nem para o dono do repositório:
 
 1. `git log --oneline main` — achar o SHA do commit (ou do merge) que
    causou o problema.
-2. `git checkout -b revert-<descrição-curta>`
-3. `git revert <sha> --no-edit` (ou um intervalo de commits, se for mais
-   de um)
-4. `git push -u origin revert-<descrição-curta>`
+2. `git checkout -b revert/<descrição-curta>`
+3. `git revert <sha> --no-edit` para um único commit. Para um intervalo
+   (do mais antigo ao mais novo, ambos inclusos):
+   `git revert --no-edit <mais-antigo>^..<mais-novo>`
+4. `git push -u origin revert/<descrição-curta>`
 5. Abrir PR, esperar o check da Vercel, merge via squash — igual a
    qualquer outra mudança.
 6. Confirmar em Vercel → Deployments que uma nova build de produção ficou
@@ -46,5 +47,6 @@ em uso (`api/*.ts`, fora `_lib/`) — 4 de folga. Antes de criar uma rota
 nova em `api/`, contar quantas existem; se estourar o limite, agrupar
 operações relacionadas num único arquivo com roteamento interno (o padrão
 já usado em `api/billing/[action].ts`) em vez de um arquivo por operação.
-Com a branch protection da Task 2 deste plano em vigor, estourar o limite
-já aparece como Preview falhando no PR — antes de chegar em produção.
+Com a branch protection da `main` em vigor (ver seção acima), estourar o
+limite já aparece como Preview falhando no PR — antes de chegar em
+produção.
