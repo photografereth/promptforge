@@ -135,8 +135,9 @@ export default function App() {
 
   // View Routing & Access Control
   const [legalPage] = useState<'termos' | 'privacidade' | null>(() => {
-    if (window.location.pathname === '/termos') return 'termos';
-    if (window.location.pathname === '/privacidade') return 'privacidade';
+    const path = window.location.pathname.replace(/\/+$/, '');
+    if (path === '/termos') return 'termos';
+    if (path === '/privacidade') return 'privacidade';
     return null;
   });
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');

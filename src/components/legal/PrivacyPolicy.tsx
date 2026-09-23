@@ -68,6 +68,7 @@ export const PrivacyPolicy: React.FC = () => (
         <li><strong className="text-neutral-100">Supabase:</strong> hospeda nosso banco de dados e sistema de autenticação.</li>
         <li><strong className="text-neutral-100">Mercado Pago:</strong> processa pagamentos e cobranças recorrentes.</li>
         <li><strong className="text-neutral-100">Google (API do Gemini):</strong> processa os prompts e imagens que você envia às funcionalidades de IA, para gerar a resposta.</li>
+        <li><strong className="text-neutral-100">Google (login):</strong> se você optar por entrar com sua conta Google, o Google atua como provedor de autenticação.</li>
       </ul>
       <p className="mt-2">Não vendemos seus dados pessoais a terceiros.</p>
     </section>
@@ -115,10 +116,12 @@ export const PrivacyPolicy: React.FC = () => (
     </section>
 
     <section>
-      <h2 className="text-lg font-bold text-neutral-100 mb-2">9. Cookies</h2>
+      <h2 className="text-lg font-bold text-neutral-100 mb-2">9. Cookies e armazenamento local</h2>
       <p>
-        Usamos apenas o cookie de sessão estritamente necessário para manter você autenticado (via
-        Supabase Auth). Não usamos cookies de rastreamento, analytics ou publicidade de terceiros.
+        Usamos armazenamento local do navegador (não cookies) para manter você autenticado e guardar
+        suas preferências, estritamente necessário pro funcionamento do serviço. No momento do
+        pagamento, o SDK do Mercado Pago pode usar identificadores próprios para prevenção a fraude.
+        Não usamos cookies ou scripts de rastreamento, analytics ou publicidade de terceiros.
       </p>
     </section>
 
