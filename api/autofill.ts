@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireIpRateLimit } from './_lib/rateLimit/requireIpRateLimit.js';
 import { authenticate } from './_lib/auth.js';
 import { requireActiveSubscription } from './_lib/billing/requireSubscription.js';
 import { requireQuota } from './_lib/billing/requireQuota.js';
@@ -94,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido.' });
   }
+  if (!(await requireIpRateLimit(req, res))) return;
 
   const user = await authenticate(req, res);
   if (!user) return;
