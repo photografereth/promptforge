@@ -48,3 +48,7 @@ operações relacionadas num único arquivo com roteamento interno (o padrão
 já usado em `api/billing/[action].ts`) em vez de um arquivo por operação.
 Com a branch protection da Task 2 deste plano em vigor, estourar o limite
 já aparece como Preview falhando no PR — antes de chegar em produção.
+
+## Histórico de drills
+
+- 2026-09-22: drill de rollback executado com sucesso (Task 3 do plano do Pilar 4).
