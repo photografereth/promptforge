@@ -751,8 +751,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onSelectPl
             FLOW PROMPT FORGE © {new Date().getFullYear()} • TODOS OS DIREITOS RESERVADOS.
           </div>
           <div className="flex items-center gap-6 uppercase text-[11px]">
-            <span>TERMOS DE USO</span>
-            <span>PRIVACIDADE</span>
+            <a href="/termos" className="hover:text-amber-400 transition-colors">TERMOS DE USO</a>
+            <a href="/privacidade" className="hover:text-amber-400 transition-colors">PRIVACIDADE</a>
             <span>SEGURANÇA</span>
             <span>STATUS: 99.9% UPTIME</span>
           </div>
