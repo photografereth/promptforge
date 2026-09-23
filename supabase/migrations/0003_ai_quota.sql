@@ -26,7 +26,10 @@ as $$
   returning count;
 $$;
 
-revoke all on function public.increment_ai_usage(uuid, date) from public;
+-- Supabase concede EXECUTE em funções novas do schema public a anon/authenticated
+-- por default privileges, mesmo sendo security definer — "revoke ... from public"
+-- sozinho não desfaz isso. Revogar de cada role explicitamente.
+revoke all on function public.increment_ai_usage(uuid, date) from public, anon, authenticated;
 grant execute on function public.increment_ai_usage(uuid, date) to service_role;
 
 create table public.gemini_circuit_breaker (

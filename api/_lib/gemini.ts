@@ -69,9 +69,11 @@ export async function generateWithFallback(
         msg.includes('RESOURCE_EXHAUSTED') ||
         msg.includes('429')
       ) {
-        void breakerRepo.setHighDemandNow(new Date().toISOString()).catch((breakerErr) => {
+        try {
+          await breakerRepo.setHighDemandNow(new Date().toISOString());
+        } catch (breakerErr) {
           console.warn('Aviso: falha ao registrar alta demanda do Gemini no circuit breaker:', breakerErr);
-        });
+        }
       }
     }
   }

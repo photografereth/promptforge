@@ -3,11 +3,16 @@ import type { AuthenticatedUser } from '../auth.js';
 import { decideQuota } from '../quota/decideQuota.js';
 import { createSupabaseUsageRepo } from '../quota/usageRepo.js';
 import { nextMidnightSaoPaulo } from '../quota/timezone.js';
+import type { UsageRepo } from '../quota/types.js';
 
 // Chamar logo após `requireActiveSubscription`: `if (!(await requireQuota(user, res))) return;`
-export async function requireQuota(user: AuthenticatedUser, res: VercelResponse): Promise<boolean> {
-  const now = new Date();
-  const decision = await decideQuota(createSupabaseUsageRepo(), user.id, now);
+export async function requireQuota(
+  user: AuthenticatedUser,
+  res: VercelResponse,
+  repo: UsageRepo = createSupabaseUsageRepo(),
+  now: Date = new Date()
+): Promise<boolean> {
+  const decision = await decideQuota(repo, user.id, now);
   if (decision === 'ok') return true;
   if (decision === 'exceeded') {
     res.status(429).json({
