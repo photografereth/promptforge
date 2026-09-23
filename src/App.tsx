@@ -18,6 +18,8 @@ import { PreferencesModal } from './components/PreferencesModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { LandingPage } from './components/LandingPage';
 import { CheckoutModal } from './components/CheckoutModal';
+import { TermsOfService } from './components/legal/TermsOfService';
+import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TikTokWinningCatalog } from './components/TikTokWinningCatalog';
 import {
   AppMode,
@@ -132,6 +134,11 @@ export default function App() {
   const [imageState, setImageState] = useState<ImagePromptState>(initialImageState);
 
   // View Routing & Access Control
+  const [legalPage] = useState<'termos' | 'privacidade' | null>(() => {
+    if (window.location.pathname === '/termos') return 'termos';
+    if (window.location.pathname === '/privacidade') return 'privacidade';
+    return null;
+  });
   const [currentView, setCurrentView] = useState<'landing' | 'app'>('landing');
   const [checkoutPlan, setCheckoutPlan] = useState<'monthly' | 'annual' | null>(null);
   const { session } = useSupabaseSession();
@@ -744,6 +751,10 @@ export default function App() {
 
   const activeProduct = mode === 'video' ? videoState.product : imageState.product;
   const activeCharacter = mode === 'video' ? videoState.character : imageState.character;
+
+  // 0. Legal Pages (públicas, sem gate de autenticação/assinatura)
+  if (legalPage === 'termos') return <TermsOfService />;
+  if (legalPage === 'privacidade') return <PrivacyPolicy />;
 
   // 1. Landing Page View
   if (currentView === 'landing') {
