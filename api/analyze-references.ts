@@ -228,7 +228,6 @@ Retorne ESTRITAMENTE um JSON puro válido no seguinte formato exato (sem markdow
       consistencySummary:
         'Trava invariável de consistência ativada: os traços da modelo e os detalhes da embalagem foram ancorados para manter identidade contínua entre cenas.',
       fallback: true,
-      fallbackReason: error.message,
     });
   }
 }
