@@ -5,6 +5,7 @@ import { runBillingCron } from '../_lib/billing/service/cron.js';
 import { cleanupOldWindows } from '../_lib/rateLimit/cleanup.js';
 import { logWarn, logError } from '../_lib/logging/logger.js';
 import { errorName } from '../_lib/logging/errorName.js';
+import { cleanupOldLogs } from '../_lib/logging/cleanup.js';
 
 // A Vercel chama crons com GET e `Authorization: Bearer $CRON_SECRET`.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -21,6 +22,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const summary = await runBillingCron(buildDeps());
     await cleanupOldWindows().catch((err) => {
       logWarn('ip_rate_limit_cleanup_failed', { errorName: errorName(err) });
+    });
+    await cleanupOldLogs().catch((err) => {
+      logWarn('system_logs_cleanup_failed', { errorName: errorName(err) });
     });
     return res.status(200).json({ ok: true, ...summary });
   } catch (error) {
