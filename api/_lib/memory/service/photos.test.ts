@@ -152,10 +152,30 @@ describe('replace e análise na confirmação', () => {
   });
 
   it('400 para replace que não é booleano ou análise inválida', async () => {
-    const { deps, asset } = await setup();
+    const { deps, storage, asset } = await setup();
     expect((await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg], replace: 'sim' })).status).toBe(400);
-    expect((await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: ['x'], replace: 1, analysis: undefined })).status).toBe(400);
-    expect((await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: ['x'], analysis: 'texto' })).status).toBe(400);
+    const up = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg] });
+    const [ticket] = up.body.uploads as UploadTicket[];
+    simulateUpload(storage, ticket.path);
+    const badReplace = await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: [ticket.path], replace: 1, analysis: undefined });
+    expect(badReplace.body.error).toBe('Valor inválido para replace.');
+    const badAnalysis = await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: [ticket.path], analysis: 'texto' });
+    expect(badAnalysis.body.error).toBe('Análise inválida.');
+  });
+
+  it('replace com uma foto nova faltando não muda o ativo nem apaga as antigas', async () => {
+    const { deps, storage, asset, old } = await withConfirmed(2);
+    const up = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg, jpeg], replace: true });
+    const [sent, lost] = up.body.uploads as UploadTicket[];
+    simulateUpload(storage, sent.path);
+
+    const res = await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: [sent.path, lost.path], replace: true, analysis: undefined });
+
+    expect(res.body).toMatchObject({ code: 'photo_missing' });
+    const after = await deps.repo.getAsset(USER_A.id, asset.id);
+    expect(after?.photos.map((p) => p.path)).toEqual(old);
+    expect(after?.analysis).toEqual({ resumo: 'antiga' });
+    expect(old.every((p) => storage.files.has(p))).toBe(true);
   });
 });
 
