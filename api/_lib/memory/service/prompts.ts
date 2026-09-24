@@ -59,12 +59,15 @@ export function encodeCursor(entry: { createdAt: string; id: string }): string {
   return `${entry.createdAt}|${entry.id}`;
 }
 
+// O cursor vira filtro do PostgREST: formato exato, porque Date.parse aceita texto entre parênteses.
+const CURSOR_TIMESTAMP = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/;
+
 export function decodeCursor(value: unknown): { createdAt: string; id: string } | null {
   if (typeof value !== 'string') return null;
   const parts = value.split('|');
   if (parts.length !== 2) return null;
   const [createdAt, id] = parts;
-  if (!isUuid(id) || Number.isNaN(Date.parse(createdAt))) return null;
+  if (!isUuid(id) || !CURSOR_TIMESTAMP.test(createdAt) || Number.isNaN(Date.parse(createdAt))) return null;
   return { createdAt, id };
 }
 

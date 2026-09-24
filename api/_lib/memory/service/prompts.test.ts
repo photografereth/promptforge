@@ -71,6 +71,17 @@ describe('listPrompts', () => {
     expect((await list(deps, brand.id, { q: 'a'.repeat(101) })).status).toBe(400);
     expect(decodeCursor('2026-01-01T00:00:00.000Z|nao-uuid')).toBeNull();
   });
+
+  it('recusa cursor com texto extra que Date.parse aceitaria como comentário', async () => {
+    const { deps } = makeDeps();
+    const brand = await seedBrand(deps, USER_A);
+    const id = '00000000-0000-4000-8000-000000000001';
+    const injected = `2020-01-01 (x",user_id.neq.a)|${id}`;
+    expect(Number.isNaN(Date.parse(injected.split('|')[0]))).toBe(false);
+    expect(decodeCursor(injected)).toBeNull();
+    expect((await list(deps, brand.id, { cursor: injected })).status).toBe(400);
+    expect(decodeCursor(`2026-09-24T12:00:00.123456+00:00|${id}`)).toEqual({ createdAt: '2026-09-24T12:00:00.123456+00:00', id });
+  });
 });
 
 describe('setPromptFavorite / deletePrompt', () => {
