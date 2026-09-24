@@ -6,6 +6,7 @@ import { cleanupOldWindows } from '../_lib/rateLimit/cleanup.js';
 import { logWarn, logError } from '../_lib/logging/logger.js';
 import { errorName } from '../_lib/logging/errorName.js';
 import { cleanupOldLogs } from '../_lib/logging/cleanup.js';
+import { cleanupOrphanPhotos } from '../_lib/memory/cleanup.js';
 
 // A Vercel chama crons com GET e `Authorization: Bearer $CRON_SECRET`.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -25,6 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     await cleanupOldLogs().catch((err) => {
       logWarn('system_logs_cleanup_failed', { errorName: errorName(err) });
+    });
+    await cleanupOrphanPhotos().catch((err) => {
+      logWarn('memory_orphan_cleanup_failed', { errorName: errorName(err) });
     });
     return res.status(200).json({ ok: true, ...summary });
   } catch (error) {
