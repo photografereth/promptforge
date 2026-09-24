@@ -21,6 +21,21 @@ describe('routeMemory', () => {
   });
 });
 
+describe('photo-upload / photo-confirm', () => {
+  it('repassam replace e analysis aos serviços', async () => {
+    const { deps, storage } = makeDeps();
+    const brand = await seedBrand(deps, USER_A);
+    const asset = await seedAsset(deps, USER_A, brand.id);
+    const up = await routeMemory(deps, USER_A, 'photo-upload', 'POST', { assetId: asset.id, files: [{ mime: 'image/jpeg', size: 10 }], replace: 'x' });
+    expect(up.status).toBe(400);
+    const ok = await routeMemory(deps, USER_A, 'photo-upload', 'POST', { assetId: asset.id, files: [{ mime: 'image/jpeg', size: 10 }], replace: true });
+    const [ticket] = ok.body.uploads as { path: string }[];
+    simulateUpload(storage, ticket.path);
+    const conf = await routeMemory(deps, USER_A, 'photo-confirm', 'POST', { assetId: asset.id, paths: [ticket.path], replace: true, analysis: { resumo: 'r' } });
+    expect(conf.body.asset).toMatchObject({ analysis: { resumo: 'r' } });
+  });
+});
+
 describe('queryInput', () => {
   it('pega o primeiro valor de cada parâmetro e ignora "action"', () => {
     expect(queryInput({ action: 'prompts', brandId: 'x', q: ['a', 'b'], vazio: undefined })).toEqual({ brandId: 'x', q: 'a' });
