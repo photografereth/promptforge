@@ -1,6 +1,6 @@
 # Memória da Marca na Nuvem — Design
 
-Status: Draft (aguardando revisão do usuário)
+Status: Approved
 Date: 2026-09-24
 Depends on: Pilar 1 (auth/dados), Pilar 2 (`requireActiveSubscription`), Pilar 5 (rate limit por IP, logger)
 Unblocks: Lotes (variações, vários produtos, sequência multi-cena) — spec separado, usa os ativos salvos daqui
