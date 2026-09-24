@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { requireIpRateLimit } from './requireIpRateLimit.js';
 import { createMemoryRepo } from './testing/memoryRepo.js';
 import { IP_RATE_LIMIT } from './types.js';
+import { createMemoryRepo as createMemoryLogRepo } from '../logging/testing/memoryRepo.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const NOW = new Date('2026-09-23T17:03:00.000Z');
@@ -45,11 +46,14 @@ describe('requireIpRateLimit', () => {
     repo.incrementAndGetCount = async () => {
       throw new Error('db fora do ar');
     };
+    const logRepo = createMemoryLogRepo();
     const res = fakeRes();
 
-    const allowed = await requireIpRateLimit(fakeReq('203.0.113.5'), res, repo, NOW);
+    const allowed = await requireIpRateLimit(fakeReq('203.0.113.5'), res, repo, NOW, logRepo);
 
     expect(allowed).toBe(false);
     expect(res.status).toHaveBeenCalledWith(503);
+    expect(logRepo.logs).toHaveLength(1);
+    expect(logRepo.logs[0].event).toBe('ip_rate_limit_check_failed');
   });
 });

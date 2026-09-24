@@ -11,8 +11,7 @@ export async function decideIpRateLimit(
     const bucket = windowStart(now).toISOString();
     const count = await repo.incrementAndGetCount(ip, bucket);
     return count <= IP_RATE_LIMIT ? 'ok' : 'limited';
-  } catch (err) {
-    console.error('Aviso: falha ao verificar rate limit por IP:', ip, err);
+  } catch {
     return 'error';
   }
 }
