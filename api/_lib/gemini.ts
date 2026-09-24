@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { pickModelOrder } from './quota/circuitBreaker.js';
 import { createSupabaseCircuitBreakerRepo } from './quota/circuitBreakerRepo.js';
 import type { CircuitBreakerRepo } from './quota/types.js';
+import { logWarn } from './logging/logger.js';
+import { errorName } from './logging/errorName.js';
 
 export function getGemini(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -26,7 +28,7 @@ async function getPreferredModels(repo: CircuitBreakerRepo): Promise<string[]> {
   try {
     return pickModelOrder(await repo.getLastHighDemandAt(), new Date());
   } catch (err) {
-    console.warn('Aviso: falha ao ler o circuit breaker do Gemini, usando ordem padrão:', err);
+    logWarn('circuit_breaker_read_failed', { errorName: errorName(err) });
     return pickModelOrder(null, new Date());
   }
 }
@@ -72,7 +74,7 @@ export async function generateWithFallback(
         try {
           await breakerRepo.setHighDemandNow(new Date().toISOString());
         } catch (breakerErr) {
-          console.warn('Aviso: falha ao registrar alta demanda do Gemini no circuit breaker:', breakerErr);
+          logWarn('circuit_breaker_write_failed', { errorName: errorName(breakerErr) });
         }
       }
     }

@@ -4,6 +4,8 @@ import { authenticate } from './_lib/auth.js';
 import { requireActiveSubscription } from './_lib/billing/requireSubscription.js';
 import { requireQuota } from './_lib/billing/requireQuota.js';
 import { getGemini, generateWithFallback } from './_lib/gemini.js';
+import { logWarn } from './_lib/logging/logger.js';
+import { errorName } from './_lib/logging/errorName.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -65,7 +67,7 @@ Gere o prompt ultra realista aprimorado em português do Brasil:`;
     const enhancedPrompt = response.text?.trim() || prompt;
     res.json({ success: true, enhancedPrompt });
   } catch (error: any) {
-    console.warn('Aviso: enhance Gemini encontrou erro, utilizando versão aprimorada fotográfica:', error.message);
+    logWarn('gemini_fallback', { route: 'enhance', errorName: errorName(error) });
     let fallbackEnhanced = prompt;
     if (mode === 'video') {
       fallbackEnhanced = prompt.replace(
