@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buildDeps } from '../_lib/billing/deps.js';
 import { handleWebhook } from '../_lib/billing/service/webhook.js';
 import { verifyMpSignature } from '../_lib/billing/webhookSignature.js';
+import { logInfo, logWarn, logError } from '../_lib/logging/logger.js';
+import { errorName } from '../_lib/logging/errorName.js';
 
 function header(req: VercelRequest, name: string): string | undefined {
   const value = req.headers[name];
@@ -13,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const secret = process.env.MP_WEBHOOK_SECRET;
   if (!secret) {
-    console.error('MP_WEBHOOK_SECRET não configurada');
+    await logError('mp_webhook_secret_missing');
     return res.status(500).json({ error: 'Webhook não configurado.' });
   }
 
@@ -33,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const type = String(body.type ?? '');
   // Só tipo e id (nunca corpo/e-mail): ajuda a diagnosticar tópicos inesperados sem expor PII.
-  console.log('webhook recebido:', { type, dataId });
+  logInfo('webhook_received', { type, dataId });
 
   const deps = buildDeps();
 
@@ -43,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (type === 'payment' && dataId) {
     try {
       const payment = await deps.mp.getPayment(dataId);
-      console.log('payment (diagnóstico):', {
+      logInfo('payment_diagnostic', {
         status: payment.status,
         status_detail: payment.status_detail ?? null,
         has_external_reference: Boolean(payment.external_reference),
@@ -51,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         point_of_interaction_type: payment.point_of_interaction?.type ?? null,
       });
     } catch (error) {
-      console.error('payment (diagnóstico) falhou:', error instanceof Error ? error.name : 'unknown');
+      logWarn('payment_diagnostic_failed', { errorName: errorName(error) });
     }
   }
 
@@ -63,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     return res.status(status).json({ received: status === 200 });
   } catch (error) {
-    console.error('webhook error:', error instanceof Error ? error.name : 'unknown');
+    await logError('webhook_handler_failed', { errorName: errorName(error) });
     return res.status(500).json({ error: 'Erro interno.' });
   }
 }

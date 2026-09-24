@@ -4,6 +4,8 @@ import { authenticate } from './_lib/auth.js';
 import { requireActiveSubscription } from './_lib/billing/requireSubscription.js';
 import { requireQuota } from './_lib/billing/requireQuota.js';
 import { getGemini, generateWithFallback } from './_lib/gemini.js';
+import { logWarn } from './_lib/logging/logger.js';
+import { errorName } from './_lib/logging/errorName.js';
 
 // Fallback local calibrado para os 3 agentes TikTok Shop & âncora de produto
 function parseIdeaLocally(
@@ -198,7 +200,7 @@ Ideia do usuário: "${idea}"`;
 
     res.json({ success: true, data });
   } catch (error: any) {
-    console.warn('Aviso: autofill Gemini encontrou erro, utilizando extração inteligente de contingência:', error.message);
+    logWarn('gemini_fallback', { route: 'autofill', errorName: errorName(error) });
     const fallbackData = parseIdeaLocally(idea, mode, agent, product);
     res.json({ success: true, data: fallbackData, fallback: true });
   }

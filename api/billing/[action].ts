@@ -3,6 +3,8 @@ import { requireIpRateLimit } from '../_lib/rateLimit/requireIpRateLimit.js';
 import { authenticate } from '../_lib/auth.js';
 import { buildDeps } from '../_lib/billing/deps.js';
 import { routeBilling } from '../_lib/billing/router.js';
+import { logError } from '../_lib/logging/logger.js';
+import { errorName } from '../_lib/logging/errorName.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!(await requireIpRateLimit(req, res))) return;
@@ -20,8 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const result = await routeBilling(buildDeps(), user, String(action ?? ''), req.method ?? 'GET', body);
     return res.status(result.status).json(result.body);
   } catch (error) {
-    // Só o nome do erro: a mensagem pode conter dados pessoais.
-    console.error('billing error:', error instanceof Error ? error.name : 'unknown');
+    await logError('billing_handler_failed', { errorName: errorName(error) });
     return res.status(500).json({ error: 'Erro interno. Tente novamente em instantes.' });
   }
 }

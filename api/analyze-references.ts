@@ -4,6 +4,8 @@ import { authenticate } from './_lib/auth.js';
 import { requireActiveSubscription } from './_lib/billing/requireSubscription.js';
 import { requireQuota } from './_lib/billing/requireQuota.js';
 import { getGemini, generateWithFallback } from './_lib/gemini.js';
+import { logWarn } from './_lib/logging/logger.js';
+import { errorName } from './_lib/logging/errorName.js';
 import { parseImageData } from './_lib/parseImageData.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -164,7 +166,7 @@ Retorne ESTRITAMENTE um JSON puro válido no seguinte formato exato (sem markdow
       consistencySummary: data.consistencySummary,
     });
   } catch (error: any) {
-    console.warn('Aviso: Falha na chamada multimodal do Gemini, utilizando análise heurística estruturada:', error.message);
+    logWarn('gemini_fallback', { route: 'analyze-references', errorName: errorName(error) });
 
     const fallbackProduct = {
       nome: existingProduct?.nome || (parsedProducts.length > 0 ? 'Produto de Referência Identificado' : 'Produto TikTok Shop'),

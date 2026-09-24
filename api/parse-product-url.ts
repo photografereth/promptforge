@@ -4,6 +4,8 @@ import { authenticate } from './_lib/auth.js';
 import { requireActiveSubscription } from './_lib/billing/requireSubscription.js';
 import { requireQuota } from './_lib/billing/requireQuota.js';
 import { getGemini, generateWithFallback } from './_lib/gemini.js';
+import { logInfo, logWarn } from './_lib/logging/logger.js';
+import { errorName } from './_lib/logging/errorName.js';
 import { parseImageData } from './_lib/parseImageData.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -71,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       fetchedMeta.fetchSucceeded = true;
     }
   } catch (err: any) {
-    console.log('Nota: Busca de metadados da URL direta concluiu com:', err.message);
+    logInfo('metadata_fetch_fallback', { errorName: errorName(err) });
   }
 
   try {
@@ -209,7 +211,7 @@ Retorne EXCLUSIVAMENTE um JSON puro válido no formato:
       fetchedTitle: fetchedMeta.title,
     });
   } catch (error: any) {
-    console.warn('Aviso: extração Gemini falhou, gerando produto estruturado a partir da URL:', error.message);
+    logWarn('gemini_fallback', { route: 'parse-product-url', errorName: errorName(error) });
 
     const urlParts = cleanUrl.split('/').filter(Boolean);
     const lastSlug = urlParts[urlParts.length - 1] || 'produto';
