@@ -55,5 +55,6 @@ describe('requireIpRateLimit', () => {
     expect(res.status).toHaveBeenCalledWith(503);
     expect(logRepo.logs).toHaveLength(1);
     expect(logRepo.logs[0].event).toBe('ip_rate_limit_check_failed');
+    expect(logRepo.logs[0].details).toEqual({ errorName: 'Error' });
   });
 });
