@@ -36,6 +36,22 @@ describe('requestPhotoUploads', () => {
     expect((await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [] })).status).toBe(400);
   });
 
+  it('pedir upload de novo descarta os envios pendentes nunca confirmados do ativo', async () => {
+    const { deps, storage, brand, asset } = await setup();
+    const folder = `${USER_A.id}/${brand.id}/${asset.id}/`;
+    const first = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg] });
+    const [kept] = first.body.uploads as UploadTicket[];
+    simulateUpload(storage, kept.path);
+    await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: [kept.path] });
+    const pending = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg, jpeg, jpeg] });
+    for (const t of pending.body.uploads as UploadTicket[]) simulateUpload(storage, t.path);
+
+    const again = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg, jpeg, jpeg] });
+
+    expect(again.status).toBe(200);
+    expect([...storage.files.keys()].filter((p) => p.startsWith(folder))).toEqual([kept.path]);
+  });
+
   it('409 quando passaria de 4 fotos no ativo', async () => {
     const { deps, asset } = await setup(3);
     const res = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg, jpeg] });

@@ -23,6 +23,14 @@ export function createMemoryStorage(): InMemoryStorage {
       if (storage.failRemove) throw new Error('storage fora do ar');
       for (const path of paths) files.delete(path);
     },
+    async listFiles(folder) {
+      const prefix = `${folder.replace(/\/+$/, '')}/`;
+      return [...files.keys()].filter((p) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/'));
+    },
+    async removeUnder(prefix) {
+      if (storage.failRemove) throw new Error('storage fora do ar');
+      for (const path of [...files.keys()]) if (path.startsWith(prefix)) files.delete(path);
+    },
   };
   return storage;
 }

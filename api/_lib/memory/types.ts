@@ -111,6 +111,8 @@ export interface StoragePort {
   createReadUrls(paths: string[], expiresInSeconds: number): Promise<Record<string, string>>;
   stat(path: string): Promise<StoredFileInfo | null>; // null = não existe
   remove(paths: string[]): Promise<void>;
+  listFiles(folder: string): Promise<string[]>; // caminhos completos dos arquivos diretamente na pasta
+  removeUnder(prefix: string): Promise<void>; // tudo sob o prefixo, recursivo
 }
 
 export interface MemoryLimits {

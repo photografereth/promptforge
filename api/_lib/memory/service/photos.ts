@@ -41,6 +41,14 @@ export async function requestPhotoUploads(
   }
   if (asset.photos.length + files.length > deps.limits.photosPerAsset) return photoLimit(deps);
 
+  // Envios pendentes nunca confirmados deste ativo são descartados a cada novo pedido,
+  // para pedidos repetidos não acumularem arquivos no Storage.
+  const confirmed = new Set(asset.photos.map((p) => p.path));
+  const stale = (await deps.storage.listFiles(`${user.id}/${asset.brandId}/${asset.id}`)).filter(
+    (p) => !confirmed.has(p)
+  );
+  await removePhotosQuietly(deps, stale);
+
   const paths = files.map((f) => photoPath(user.id, asset.brandId, asset.id, deps.newId(), f.mime));
   return ok({ uploads: await deps.storage.createUploadUrls(paths) });
 }
