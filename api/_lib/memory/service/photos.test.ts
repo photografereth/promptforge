@@ -102,6 +102,63 @@ describe('confirmPhotos', () => {
   });
 });
 
+describe('replace e análise na confirmação', () => {
+  // Item com `count` fotos já confirmadas sob o prefixo real do ativo.
+  async function withConfirmed(count: number) {
+    const ctx = await setup();
+    const photos = Array.from({ length: count }, (_, i) => ({
+      path: photoPath(USER_A.id, ctx.brand.id, ctx.asset.id, `d0000000-0000-4000-8000-00000000000${i}`, 'image/jpeg'),
+      mime: 'image/jpeg',
+      size: 1,
+    }));
+    for (const p of photos) simulateUpload(ctx.storage, p.path);
+    const asset = (await ctx.repo.updateAsset(USER_A.id, ctx.asset.id, { photos, analysis: { resumo: 'antiga' } }))!;
+    return { ...ctx, asset, old: photos.map((p) => p.path) };
+  }
+
+  it('replace troca todas as fotos: aceita 4 novas num item com 4 e apaga as antigas só depois de confirmar', async () => {
+    const { deps, storage, asset, old } = await withConfirmed(4);
+    const up = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg, jpeg, jpeg, jpeg], replace: true });
+    expect(up.status).toBe(200);
+    const tickets = up.body.uploads as UploadTicket[];
+    expect(old.every((p) => storage.files.has(p))).toBe(true);
+    for (const t of tickets) simulateUpload(storage, t.path);
+
+    const res = await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: tickets.map((t) => t.path), replace: true, analysis: undefined });
+
+    expect(res.status).toBe(200);
+    expect((res.body.asset as { photos: { path: string }[] }).photos.map((p) => p.path)).toEqual(tickets.map((t) => t.path));
+    expect(old.some((p) => storage.files.has(p))).toBe(false);
+  });
+
+  it('replace pode manter uma foto antiga junto com as novas', async () => {
+    const { deps, storage, asset, old } = await withConfirmed(2);
+    const up = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg], replace: true });
+    const [ticket] = up.body.uploads as UploadTicket[];
+    simulateUpload(storage, ticket.path);
+    const res = await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: [old[1], ticket.path], replace: true, analysis: undefined });
+    expect((res.body.asset as { photos: { path: string }[] }).photos.map((p) => p.path)).toEqual([old[1], ticket.path]);
+    expect(storage.files.has(old[0])).toBe(false);
+    expect(storage.files.has(old[1])).toBe(true);
+  });
+
+  it('grava a análise enviada na confirmação em vez de zerar', async () => {
+    const { deps, storage, asset } = await setup();
+    const up = await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg] });
+    const [ticket] = up.body.uploads as UploadTicket[];
+    simulateUpload(storage, ticket.path);
+    const res = await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: [ticket.path], analysis: { resumo: 'nova' } });
+    expect(res.body.asset).toMatchObject({ analysis: { resumo: 'nova' } });
+  });
+
+  it('400 para replace que não é booleano ou análise inválida', async () => {
+    const { deps, asset } = await setup();
+    expect((await requestPhotoUploads(deps, USER_A, { assetId: asset.id, files: [jpeg], replace: 'sim' })).status).toBe(400);
+    expect((await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: ['x'], replace: 1, analysis: undefined })).status).toBe(400);
+    expect((await confirmPhotos(deps, USER_A, { assetId: asset.id, paths: ['x'], analysis: 'texto' })).status).toBe(400);
+  });
+});
+
 describe('removePhoto', () => {
   it('remove do Storage e do ativo e zera a análise', async () => {
     const { deps, storage, asset } = await setup(1);

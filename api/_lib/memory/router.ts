@@ -27,8 +27,13 @@ const ROUTES: Record<string, Partial<Record<string, Handler>>> = {
     POST: (d, u, i) =>
       useAsset(d, u, { brandId: i.brandId, kind: i.kind, name: i.name, data: i.data, analysis: i.analysis }),
   },
-  'photo-upload': { POST: (d, u, i) => requestPhotoUploads(d, u, { assetId: i.assetId, files: i.files }) },
-  'photo-confirm': { POST: (d, u, i) => confirmPhotos(d, u, { assetId: i.assetId, paths: i.paths }) },
+  'photo-upload': {
+    POST: (d, u, i) => requestPhotoUploads(d, u, { assetId: i.assetId, files: i.files, replace: i.replace }),
+  },
+  'photo-confirm': {
+    POST: (d, u, i) =>
+      confirmPhotos(d, u, { assetId: i.assetId, paths: i.paths, replace: i.replace, analysis: i.analysis }),
+  },
   'photo-remove': { POST: (d, u, i) => removePhoto(d, u, { assetId: i.assetId, path: i.path }) },
   prompts: {
     GET: (d, u, i) => listPrompts(d, u, { brandId: i.brandId, q: i.q, favorite: i.favorite, cursor: i.cursor }),
