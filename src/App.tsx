@@ -43,6 +43,12 @@ import { SubscriptionPortal } from './components/billing/SubscriptionPortal';
 import { GraceBanner } from './components/billing/GraceBanner';
 import { BillingLoading, BillingLoadError } from './components/billing/BillingStateScreens';
 import { AlertCircle } from 'lucide-react';
+import { useBrandMemory } from './hooks/useBrandMemory';
+import { BrandSwitcher } from './components/memory/BrandSwitcher';
+import { MemoryNotice, type Notice } from './components/memory/MemoryNotice';
+import { MemoryLimitModal } from './components/memory/MemoryLimitModal';
+import { MemoryApiError } from './lib/memoryApi';
+import { kitFromPreferences, preferencesFromKit } from './lib/memory/historyImport';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
 const STORAGE_KEY_HISTORY = 'flow_prompt_forge_history_v2';
@@ -147,6 +153,13 @@ export default function App() {
 
   // Cobrança: estado vindo do backend (o bloqueio real das rotas de IA é no servidor).
   const subscription = useSubscription(isAuthenticated);
+
+  // Memória da marca: só para quem está logado e tem acesso.
+  const memoryEnabled = isAuthenticated && Boolean(subscription.data?.hasAccess);
+  const memory = useBrandMemory(memoryEnabled);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  const [limitError, setLimitError] = useState<MemoryApiError | null>(null);
   const [isConfirming, setIsConfirming] = useState<boolean>(
     () => window.location.pathname === '/subscription/confirm'
   );
@@ -172,15 +185,10 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
 
-  // Preferences & History
-  const [preferences, setPreferences] = useState<UserPreferences>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_PREFS);
-      return saved ? JSON.parse(saved) : defaultPreferences;
-    } catch {
-      return defaultPreferences;
-    }
-  });
+  // Kit da marca atual (na nuvem). Visitante sem memória usa os padrões do app.
+  const preferences: UserPreferences = memory.currentBrand
+    ? preferencesFromKit(memory.currentBrand.kit)
+    : defaultPreferences;
 
   const [history, setHistory] = useState<PromptHistoryItem[]>(() => {
     try {
@@ -196,14 +204,10 @@ export default function App() {
 
   const essentialSectionRef = useRef<HTMLDivElement>(null);
 
-  // Save preferences to localStorage
   const handleSavePreferences = (newPrefs: UserPreferences) => {
-    setPreferences(newPrefs);
-    try {
-      localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(newPrefs));
-    } catch (e) {
-      console.error(e);
-    }
+    memory.saveKit(kitFromPreferences(newPrefs)).catch(() =>
+      setNotice({ message: 'Não foi possível salvar o kit da marca. Tente novamente.' })
+    );
   };
 
   // Apply preferences
@@ -221,12 +225,10 @@ export default function App() {
     }
   };
 
-  // Initial auto-apply if preference configured
+  // Ao entrar ou trocar de marca, aplica o kit dela se estiver marcado para aplicar sozinho.
   useEffect(() => {
-    if (preferences.autoApply) {
-      applyPreferencesToState(preferences);
-    }
-  }, []);
+    if (memory.currentBrand?.kit.autoApply) applyPreferencesToState(preferences);
+  }, [memory.currentBrand?.id]);
 
   // When authentication completes (e.g. after a Google OAuth redirect) while
   // the user is still sitting on the landing view, take them into the app
@@ -848,10 +850,11 @@ export default function App() {
 
       {/* Header */}
       <Header
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenSettings={() => (memoryEnabled ? setIsSettingsOpen(true) : setCheckoutPlan('annual'))}
+        onOpenHistory={() => (memoryEnabled ? setIsHistoryOpen(true) : setCheckoutPlan('annual'))}
+        memoryLocked={!memoryEnabled}
+        brandSlot={memoryEnabled ? <BrandSwitcher memory={memory} onLimit={setLimitError} /> : undefined}
         onOpenLanding={() => setCurrentView('landing')}
-        historyCount={history.length}
         hasAutoPreferences={preferences.autoApply}
         userEmail={session?.user?.email}
         onLogout={handleLogout}
@@ -1025,6 +1028,7 @@ export default function App() {
 
       {/* Preferences Modal (Meus Padrões ⚙️) */}
       <PreferencesModal
+        key={memory.currentBrand?.id ?? 'sem-marca'}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         preferences={preferences}
@@ -1051,6 +1055,9 @@ export default function App() {
           onChanged={subscription.refresh}
         />
       )}
+
+      <MemoryNotice notice={notice} onDismiss={dismissNotice} />
+      <MemoryLimitModal error={limitError} onClose={() => setLimitError(null)} />
 
       {/* Checkout / Subscription Modal */}
       <CheckoutModal
