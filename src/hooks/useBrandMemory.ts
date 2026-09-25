@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { memoryApi } from '../lib/memoryApi';
 import type { Brand, BrandKit, MemoryAsset } from '../lib/memory/types';
 
@@ -53,21 +53,29 @@ export function useBrandMemory(enabled: boolean) {
     }
   }, [enabled, reload]);
 
+  // A marca atual fica num ref: refreshAssets lê sempre a de agora (inclusive quando chamado por um
+  // salvamento que começou em outra marca) e descarta respostas que chegam depois de uma troca.
+  const brandRef = useRef<string | null>(currentBrandId);
+  brandRef.current = currentBrandId;
+
   const refreshAssets = useCallback(async () => {
-    if (!currentBrandId) {
+    const requested = brandRef.current;
+    if (!requested) {
       setAssets([]);
       return;
     }
     try {
-      setAssets((await memoryApi.listAssets(currentBrandId)).assets);
+      const { assets: list } = await memoryApi.listAssets(requested);
+      if (brandRef.current === requested) setAssets(list);
     } catch {
       // A lista anterior continua na tela.
     }
-  }, [currentBrandId]);
+  }, []);
 
   useEffect(() => {
+    setAssets([]); // nunca mostrar itens da marca anterior enquanto a nova carrega
     void refreshAssets();
-  }, [refreshAssets]);
+  }, [currentBrandId, refreshAssets]);
 
   const selectBrand = (id: string) => {
     setBrandId(id);

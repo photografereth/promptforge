@@ -54,6 +54,7 @@ import { LibraryDrawer } from './components/memory/LibraryDrawer';
 import { characterFromData, productFromData } from './lib/memory/assetForm';
 import { saveGeneration } from './lib/memory/saveGeneration';
 import { mergeStoragePaths } from './lib/memory/photoPlan';
+import { enqueue } from './lib/memory/queue';
 import type { LibraryPrompt, MemoryAsset } from './lib/memory/types';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
@@ -263,10 +264,11 @@ export default function App() {
     }
   };
 
-  // Ao entrar ou trocar de marca, aplica o kit dela se estiver marcado para aplicar sozinho.
+  // Ao entrar, trocar de marca ou o kit mudar (inclusive pela importação), aplica o kit se estiver
+  // marcado para aplicar sozinho.
   useEffect(() => {
     if (memory.currentBrand?.kit.autoApply) applyPreferencesToState(preferences);
-  }, [memory.currentBrand?.id]);
+  }, [memory.currentBrand?.id, JSON.stringify(memory.currentBrand?.kit ?? null)]);
 
   // When authentication completes (e.g. after a Google OAuth redirect) while
   // the user is still sitting on the landing view, take them into the app
@@ -281,9 +283,16 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
+  // saveToHistory também é chamado de dentro de setTimeout (autofill, análise), com a função de uma
+  // renderização antiga: lê sempre o estado mais recente daqui, nunca do closure.
+  const latest = useRef({ videoState, imageState, mediaState, sessionAnalysis, mode, idea, memoryEnabled, brand: memory.currentBrand });
+  latest.current = { videoState, imageState, mediaState, sessionAnalysis, mode, idea, memoryEnabled, brand: memory.currentBrand };
+
   // Salva o prompt gerado (e o produto/criadora usados) na memória da marca, em segundo plano.
   const saveToHistory = (detPrompt: string, enhPrompt?: string) => {
     if (!detPrompt.trim()) return;
+    // Sombreia os nomes do componente de propósito: o resto da função usa o estado atual.
+    const { videoState, imageState, mediaState, sessionAnalysis, mode, idea, memoryEnabled, brand } = latest.current;
 
     const currentAgent = videoState.agent || 'ugc';
     const prodName = (mode === 'video' ? videoState.product?.nome : imageState.product?.nome) || '';
@@ -306,8 +315,7 @@ export default function App() {
       imageState: mode === 'image' ? { ...imageState } : undefined,
     };
 
-    if (!memoryEnabled || !memory.currentBrand) return;
-    const brand = memory.currentBrand;
+    if (!memoryEnabled || !brand) return;
     const productAnchor = mode === 'video' ? videoState.product : imageState.product;
     const characterAnchor = mode === 'video' ? videoState.character : imageState.character;
     const input = {
@@ -328,7 +336,9 @@ export default function App() {
       analysis: sessionAnalysis,
     };
 
-    saveQueue.current = saveQueue.current.then(async () => {
+    const onSaveError = () =>
+      setNotice({ message: 'Não foi possível salvar na nuvem. O prompt continua aqui; tente gerar de novo.' });
+    saveQueue.current = enqueue(saveQueue.current, async () => {
       const result = await saveGeneration(memoryApi, uploadToSignedUrl, input);
       setMediaState((prev) => ({
         ...prev,
@@ -353,7 +363,7 @@ export default function App() {
       } else if (extra) {
         setNotice({ message: extra.trim() });
       }
-    });
+    }, onSaveError);
   };
 
   // Compute deterministic prompt based on current mode
@@ -812,10 +822,14 @@ export default function App() {
   };
 
   // Escolher um item salvo preenche a ficha e a galeria; nenhuma análise de IA é chamada.
+  // Baixa as fotos ANTES de mudar qualquer coisa: se falhar, a ficha e a galeria continuam como
+  // estavam (senão o próximo salvamento gravaria as fotos antigas no item escolhido). Só a última
+  // escolha de cada tipo vale, para uma resposta lenta não sobrescrever a mais recente.
+  const selectSeq = useRef<Record<string, number>>({});
   const handleSelectAsset = async (asset: MemoryAsset) => {
-    if (asset.kind === 'product') handleApplyProductPreset(productFromData(asset.data));
-    else handleApplyCharacterPreset(characterFromData(asset.data));
-    setSessionAnalysis((prev) => ({ ...prev, [asset.kind]: undefined }));
+    const seq = (selectSeq.current[asset.kind] ?? 0) + 1;
+    selectSeq.current[asset.kind] = seq;
+    const isLatest = () => selectSeq.current[asset.kind] === seq;
 
     let images: ReferenceImageItem[] = [];
     try {
@@ -831,15 +845,36 @@ export default function App() {
           }))
       );
     } catch {
+      if (!isLatest()) return;
       setNotice({ message: 'Não foi possível carregar as fotos deste item. Abra a lista de novo e tente outra vez.' });
       void memory.refreshAssets();
       return;
     }
+    if (!isLatest()) return;
+
+    if (asset.kind === 'product') handleApplyProductPreset(productFromData(asset.data));
+    else handleApplyCharacterPreset(characterFromData(asset.data));
+    setSessionAnalysis((prev) => ({ ...prev, [asset.kind]: undefined }));
     setMediaState((prev) =>
       asset.kind === 'product'
         ? { ...prev, productImages: images, productImage: images[0] ?? null }
         : { ...prev, characterImages: images, characterImage: images[0] ?? null }
     );
+  };
+
+  // Visitante vai para a assinatura. Assinante cujas marcas ainda não carregaram (ou falharam) vê
+  // um aviso, em vez de um Kit com os padrões do app que "salvaria" sem salvar nada.
+  const openMemoryPanel = (open: (value: boolean) => void) => {
+    if (!memoryEnabled) {
+      setCheckoutPlan('annual');
+      return;
+    }
+    if (!memory.currentBrand) {
+      setNotice({ message: 'Suas marcas ainda não carregaram. Tente de novo em instantes.' });
+      if (memory.status === 'error') void memory.reload();
+      return;
+    }
+    open(true);
   };
 
   const handleTogglePin = (asset: MemoryAsset) => {
@@ -951,8 +986,8 @@ export default function App() {
 
       {/* Header */}
       <Header
-        onOpenSettings={() => (memoryEnabled ? setIsSettingsOpen(true) : setCheckoutPlan('annual'))}
-        onOpenHistory={() => (memoryEnabled ? setIsHistoryOpen(true) : setCheckoutPlan('annual'))}
+        onOpenSettings={() => openMemoryPanel(setIsSettingsOpen)}
+        onOpenHistory={() => openMemoryPanel(setIsHistoryOpen)}
         memoryLocked={!memoryEnabled}
         brandSlot={memoryEnabled ? <BrandSwitcher memory={memory} onLimit={setLimitError} /> : undefined}
         onOpenLanding={() => setCurrentView('landing')}
@@ -1146,7 +1181,7 @@ export default function App() {
 
       {/* Preferences Modal (Meus Padrões ⚙️) */}
       <PreferencesModal
-        key={memory.currentBrand?.id ?? 'sem-marca'}
+        key={memory.currentBrand ? `${memory.currentBrand.id}:${memory.currentBrand.updatedAt}` : 'sem-marca'}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         preferences={preferences}

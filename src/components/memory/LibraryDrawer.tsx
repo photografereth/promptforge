@@ -59,13 +59,14 @@ export const LibraryDrawer: React.FC<LibraryDrawerProps> = ({ isOpen, onClose, b
 
   useEffect(() => {
     const el = sentinel.current;
-    if (!el || !cursor) return;
+    // Depois de um erro não carrega sozinho de novo (senão repetiria em loop); o usuário usa "Tentar de novo".
+    if (!el || !cursor || error) return;
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && !loading) void load(false, cursor);
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [cursor, loading, load]);
+  }, [cursor, loading, load, error]);
 
   if (!isOpen) return null;
 
@@ -135,7 +136,18 @@ export const LibraryDrawer: React.FC<LibraryDrawerProps> = ({ isOpen, onClose, b
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {error && <p className="text-xs text-red-300">{error}</p>}
+          {error && (
+            <p className="text-xs text-red-300 flex items-center gap-2">
+              {error}
+              <button
+                type="button"
+                onClick={() => void load(items.length === 0, items.length === 0 ? null : cursor)}
+                className="underline text-red-200 cursor-pointer"
+              >
+                Tentar de novo
+              </button>
+            </p>
+          )}
           {!loading && items.length === 0 && !error && (
             <p className="text-xs text-neutral-500 p-3">
               {debounced || onlyFavorites ? 'Nada encontrado.' : 'Os prompts gerados nesta marca aparecem aqui.'}
