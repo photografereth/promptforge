@@ -4,7 +4,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['api/**/*.test.ts'],
+    // src/ só tem testes de funções puras (sem DOM); componentes são verificados no navegador.
+    include: ['api/**/*.test.ts', 'src/**/*.test.ts'],
     // supabaseAdmin.ts lança na hora do import se essas variáveis faltarem — não
     // são usadas de verdade (todo teste injeta seu próprio fake/memory repo), só
     // existem pra permitir importar módulos que criam o client no escopo do módulo.
