@@ -54,7 +54,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-neutral-100 font-display">
-                Meus padrões visuais
+                Kit da marca
               </h3>
               <p className="text-xs text-neutral-400">
                 Guarde suas preferências autorais para não repetir configurações

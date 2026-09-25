@@ -1,26 +1,28 @@
 import React from 'react';
-import { Settings, History, Sparkles, Clapperboard, CreditCard } from 'lucide-react';
+import { Settings, Library, Clapperboard, CreditCard, Lock } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSettings: () => void;
   onOpenHistory: () => void;
   onOpenLanding?: () => void;
-  historyCount: number;
   hasAutoPreferences: boolean;
   userEmail?: string;
   onLogout?: () => void;
   onOpenSubscription?: () => void;
+  brandSlot?: React.ReactNode;
+  memoryLocked?: boolean; // visitante sem assinatura: Biblioteca e Kit abrem a assinatura
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenHistory,
   onOpenLanding,
-  historyCount,
   hasAutoPreferences,
   userEmail,
   onLogout,
   onOpenSubscription,
+  brandSlot,
+  memoryLocked = false,
 }) => {
   return (
     <header className="border-b border-neutral-800/80 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-30">
@@ -86,21 +88,18 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* History button */}
+          {brandSlot}
+
+          {/* Library button */}
           <button
             id="btn-open-history"
             type="button"
             onClick={onOpenHistory}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-300 bg-neutral-800/70 hover:bg-neutral-800 border border-neutral-700/60 hover:border-neutral-600 transition-all cursor-pointer"
-            title="Ver histórico de prompts recentes"
+            title={memoryLocked ? 'Assine para salvar produtos, criadoras e prompts na nuvem' : 'Biblioteca de prompts da marca'}
           >
-            <History className="w-3.5 h-3.5 text-neutral-400" />
-            <span className="hidden md:inline">Histórico</span>
-            {historyCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-neutral-700 text-amber-300 text-[10px] font-semibold">
-                {historyCount}
-              </span>
-            )}
+            {memoryLocked ? <Lock className="w-3.5 h-3.5 text-neutral-500" /> : <Library className="w-3.5 h-3.5 text-neutral-400" />}
+            <span className="hidden md:inline">Biblioteca</span>
           </button>
 
           {/* Preferences gear button */}
@@ -109,10 +108,10 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenSettings}
             className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-300 bg-neutral-800/70 hover:bg-neutral-800 border border-neutral-700/60 hover:border-neutral-600 transition-all cursor-pointer"
-            title="Meus padrões (Salvar preferências padrão)"
+            title={memoryLocked ? 'Assine para salvar o kit da sua marca' : 'Kit da marca (padrões visuais)'}
           >
-            <Settings className="w-4 h-4 text-amber-400" />
-            <span className="hidden md:inline">Meus padrões</span>
+            {memoryLocked ? <Lock className="w-4 h-4 text-neutral-500" /> : <Settings className="w-4 h-4 text-amber-400" />}
+            <span className="hidden md:inline">Kit da marca</span>
             {hasAutoPreferences && (
               <span
                 className="w-2 h-2 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5 shadow-sm shadow-amber-400/80"

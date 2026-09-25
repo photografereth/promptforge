@@ -15,7 +15,6 @@ import { EssentialSection } from './components/EssentialSection';
 import { MoreDetailsAccordion } from './components/MoreDetailsAccordion';
 import { PromptOutput } from './components/PromptOutput';
 import { PreferencesModal } from './components/PreferencesModal';
-import { HistoryDrawer } from './components/HistoryDrawer';
 import { LandingPage } from './components/LandingPage';
 import { CheckoutModal } from './components/CheckoutModal';
 import { TermsOfService } from './components/legal/TermsOfService';
@@ -27,6 +26,7 @@ import {
   ProductAnchor,
   CharacterAnchor,
   ReferenceMediaState,
+  ReferenceImageItem,
   VideoPromptState,
   ImagePromptState,
   UserPreferences,
@@ -43,6 +43,19 @@ import { SubscriptionPortal } from './components/billing/SubscriptionPortal';
 import { GraceBanner } from './components/billing/GraceBanner';
 import { BillingLoading, BillingLoadError } from './components/billing/BillingStateScreens';
 import { AlertCircle } from 'lucide-react';
+import { useBrandMemory } from './hooks/useBrandMemory';
+import { BrandSwitcher } from './components/memory/BrandSwitcher';
+import { MemoryNotice, type Notice } from './components/memory/MemoryNotice';
+import { MemoryLimitModal } from './components/memory/MemoryLimitModal';
+import { MemoryApiError, memoryApi, uploadToSignedUrl, urlToDataUrl } from './lib/memoryApi';
+import { kitFromPreferences, preferencesFromKit, toImportItems } from './lib/memory/historyImport';
+import { AssetPicker } from './components/memory/AssetPicker';
+import { LibraryDrawer } from './components/memory/LibraryDrawer';
+import { characterFromData, productFromData } from './lib/memory/assetForm';
+import { saveGeneration } from './lib/memory/saveGeneration';
+import { mergeStoragePaths } from './lib/memory/photoPlan';
+import { enqueue } from './lib/memory/queue';
+import type { LibraryPrompt, MemoryAsset } from './lib/memory/types';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
 const STORAGE_KEY_HISTORY = 'flow_prompt_forge_history_v2';
@@ -147,6 +160,54 @@ export default function App() {
 
   // Cobrança: estado vindo do backend (o bloqueio real das rotas de IA é no servidor).
   const subscription = useSubscription(isAuthenticated);
+
+  // Memória da marca: só para quem está logado e tem acesso.
+  const memoryEnabled = isAuthenticated && Boolean(subscription.data?.hasAccess);
+  const memory = useBrandMemory(memoryEnabled);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  const [limitError, setLimitError] = useState<MemoryApiError | null>(null);
+
+  // Análise da IA feita nesta sessão; vai junto quando o item é salvo com fotos novas.
+  const [sessionAnalysis, setSessionAnalysis] = useState<{
+    product?: Record<string, unknown>;
+    character?: Record<string, unknown>;
+  }>({});
+
+  // Salvamentos em série: pedidos de upload paralelos do mesmo item descartariam uns aos outros.
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+
+  // Importação única do histórico antigo do navegador. O useRef evita a execução dupla do <StrictMode>.
+  const importStarted = useRef(false);
+  useEffect(() => {
+    if (memory.status !== 'ready' || importStarted.current) return;
+    let items: PromptHistoryItem[] = [];
+    let prefs: UserPreferences | null = null;
+    try {
+      const rawHistory = JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY) || '[]');
+      items = Array.isArray(rawHistory) ? rawHistory : [];
+      prefs = JSON.parse(localStorage.getItem(STORAGE_KEY_PREFS) || 'null');
+    } catch {
+      items = [];
+    }
+    if (items.length === 0 && !prefs) return;
+    importStarted.current = true;
+    memoryApi
+      .importLocal(toImportItems(items), prefs ? kitFromPreferences(prefs) : undefined)
+      .then((res) => {
+        try {
+          localStorage.removeItem(STORAGE_KEY_HISTORY);
+          localStorage.removeItem(STORAGE_KEY_PREFS);
+        } catch {
+          // Sem localStorage: a importação não duplica numa próxima vez (o servidor ignora o que já veio).
+        }
+        if (res.kitImported) void memory.reload();
+        if (res.imported > 0) setNotice({ message: `Importamos seus ${res.imported} prompts recentes para a biblioteca.` });
+      })
+      .catch(() => {
+        importStarted.current = false; // tenta de novo no próximo carregamento
+      });
+  }, [memory.status]);
   const [isConfirming, setIsConfirming] = useState<boolean>(
     () => window.location.pathname === '/subscription/confirm'
   );
@@ -172,38 +233,20 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
 
-  // Preferences & History
-  const [preferences, setPreferences] = useState<UserPreferences>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_PREFS);
-      return saved ? JSON.parse(saved) : defaultPreferences;
-    } catch {
-      return defaultPreferences;
-    }
-  });
-
-  const [history, setHistory] = useState<PromptHistoryItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_HISTORY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Kit da marca atual (na nuvem). Visitante sem memória usa os padrões do app.
+  const preferences: UserPreferences = memory.currentBrand
+    ? preferencesFromKit(memory.currentBrand.kit)
+    : defaultPreferences;
 
   // Enhanced prompt state
   const [enhancedPrompt, setEnhancedPrompt] = useState<string>('');
 
   const essentialSectionRef = useRef<HTMLDivElement>(null);
 
-  // Save preferences to localStorage
   const handleSavePreferences = (newPrefs: UserPreferences) => {
-    setPreferences(newPrefs);
-    try {
-      localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(newPrefs));
-    } catch (e) {
-      console.error(e);
-    }
+    memory.saveKit(kitFromPreferences(newPrefs)).catch(() =>
+      setNotice({ message: 'Não foi possível salvar o kit da marca. Tente novamente.' })
+    );
   };
 
   // Apply preferences
@@ -221,12 +264,11 @@ export default function App() {
     }
   };
 
-  // Initial auto-apply if preference configured
+  // Ao entrar, trocar de marca ou o kit mudar (inclusive pela importação), aplica o kit se estiver
+  // marcado para aplicar sozinho.
   useEffect(() => {
-    if (preferences.autoApply) {
-      applyPreferencesToState(preferences);
-    }
-  }, []);
+    if (memory.currentBrand?.kit.autoApply) applyPreferencesToState(preferences);
+  }, [memory.currentBrand?.id, JSON.stringify(memory.currentBrand?.kit ?? null)]);
 
   // When authentication completes (e.g. after a Google OAuth redirect) while
   // the user is still sitting on the landing view, take them into the app
@@ -241,9 +283,16 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  // Save history to localStorage
+  // saveToHistory também é chamado de dentro de setTimeout (autofill, análise), com a função de uma
+  // renderização antiga: lê sempre o estado mais recente daqui, nunca do closure.
+  const latest = useRef({ videoState, imageState, mediaState, sessionAnalysis, mode, idea, memoryEnabled, brand: memory.currentBrand });
+  latest.current = { videoState, imageState, mediaState, sessionAnalysis, mode, idea, memoryEnabled, brand: memory.currentBrand };
+
+  // Salva o prompt gerado (e o produto/criadora usados) na memória da marca, em segundo plano.
   const saveToHistory = (detPrompt: string, enhPrompt?: string) => {
     if (!detPrompt.trim()) return;
+    // Sombreia os nomes do componente de propósito: o resto da função usa o estado atual.
+    const { videoState, imageState, mediaState, sessionAnalysis, mode, idea, memoryEnabled, brand } = latest.current;
 
     const currentAgent = videoState.agent || 'ugc';
     const prodName = (mode === 'video' ? videoState.product?.nome : imageState.product?.nome) || '';
@@ -266,16 +315,55 @@ export default function App() {
       imageState: mode === 'image' ? { ...imageState } : undefined,
     };
 
-    setHistory((prev) => {
-      const filtered = prev.filter((p) => p.deterministicPrompt !== detPrompt);
-      const updated = [newItem, ...filtered].slice(0, 12);
-      try {
-        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
+    if (!memoryEnabled || !brand) return;
+    const productAnchor = mode === 'video' ? videoState.product : imageState.product;
+    const characterAnchor = mode === 'video' ? videoState.character : imageState.character;
+    const input = {
+      brandId: brand.id,
+      prompt: {
+        mode,
+        agent: currentAgent,
+        title: newItem.title.slice(0, 200),
+        productName: prodName.trim().slice(0, 80) || undefined,
+        deterministicPrompt: detPrompt,
+        enhancedPrompt: enhPrompt || undefined,
+        state: (mode === 'video' ? { ...videoState } : { ...imageState }) as unknown as Record<string, unknown>,
+      },
+      product: productAnchor,
+      productImages: mediaState.productImages,
+      character: characterAnchor,
+      characterImages: mediaState.characterImages,
+      analysis: sessionAnalysis,
+    };
+
+    const onSaveError = () =>
+      setNotice({ message: 'Não foi possível salvar na nuvem. O prompt continua aqui; tente gerar de novo.' });
+    saveQueue.current = enqueue(saveQueue.current, async () => {
+      const result = await saveGeneration(memoryApi, uploadToSignedUrl, input);
+      setMediaState((prev) => ({
+        ...prev,
+        productImages: result.product ? mergeStoragePaths(prev.productImages, result.product.images) : prev.productImages,
+        characterImages: result.character ? mergeStoragePaths(prev.characterImages, result.character.images) : prev.characterImages,
+      }));
+      void memory.refreshAssets();
+
+      if (result.errors.length > 0) {
+        setNotice({ message: `Não foi possível salvar na nuvem (${result.errors.join(', ')}). O prompt continua aqui; tente gerar de novo.` });
+        return;
       }
-      return updated;
-    });
+      const created = result.product?.created ? result.product : result.character?.created ? result.character : undefined;
+      const trimmed = result.product?.truncated || result.character?.truncated;
+      const extra = trimmed ? ' Só as 4 primeiras fotos foram guardadas.' : '';
+      if (created) {
+        setNotice({
+          message: `${created.asset.name} salvo nos recentes.${extra}`,
+          actionLabel: '📌 Fixar',
+          onAction: () => handleTogglePin(created.asset),
+        });
+      } else if (extra) {
+        setNotice({ message: extra.trim() });
+      }
+    }, onSaveError);
   };
 
   // Compute deterministic prompt based on current mode
@@ -436,6 +524,11 @@ export default function App() {
     scene: any;
     consistencySummary: string;
   }) => {
+    setSessionAnalysis({
+      product: result.product ? { ...result.product, consistencySummary: result.consistencySummary } : undefined,
+      character: result.character ? { ...result.character, consistencySummary: result.consistencySummary } : undefined,
+    });
+
     // 1. Update Product
     if (result.product) {
       setVideoState((prev) => ({
@@ -693,6 +786,7 @@ export default function App() {
     setIdea('');
     setEnhancedPrompt('');
     setErrorMessage(null);
+    setSessionAnalysis({});
 
     if (mode === 'video') {
       const resetVideo = {
@@ -717,37 +811,81 @@ export default function App() {
     }
   };
 
-  // Load an item from history
-  const handleLoadHistoryItem = (item: PromptHistoryItem) => {
-    setMode(item.mode);
-    if (item.ideaUsed) setIdea(item.ideaUsed);
-    if (item.videoState) setVideoState(item.videoState);
-    if (item.imageState) setImageState(item.imageState);
-    if (item.enhancedPrompt) setEnhancedPrompt(item.enhancedPrompt);
-    else setEnhancedPrompt('');
+  // Reabre um prompt da biblioteca com todos os campos.
+  const handleOpenLibraryPrompt = (prompt: LibraryPrompt) => {
+    setMode(prompt.mode);
+    if (prompt.state) {
+      if (prompt.mode === 'video') setVideoState({ ...initialVideoState, ...(prompt.state as Partial<VideoPromptState>) });
+      else setImageState({ ...initialImageState, ...(prompt.state as Partial<ImagePromptState>) });
+    }
+    setEnhancedPrompt(prompt.enhancedPrompt ?? '');
   };
 
-  // Delete history item
-  const handleDeleteHistoryItem = (id: string) => {
-    setHistory((prev) => {
-      const updated = prev.filter((item) => item.id !== id);
-      try {
-        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(updated));
-      } catch (e) {
-        console.error(e);
-      }
-      return updated;
+  // Escolher um item salvo preenche a ficha e a galeria; nenhuma análise de IA é chamada.
+  // Baixa as fotos ANTES de mudar qualquer coisa: se falhar, a ficha e a galeria continuam como
+  // estavam (senão o próximo salvamento gravaria as fotos antigas no item escolhido). Só a última
+  // escolha de cada tipo vale, para uma resposta lenta não sobrescrever a mais recente.
+  const selectSeq = useRef<Record<string, number>>({});
+  const handleSelectAsset = async (asset: MemoryAsset) => {
+    const seq = (selectSeq.current[asset.kind] ?? 0) + 1;
+    selectSeq.current[asset.kind] = seq;
+    const isLatest = () => selectSeq.current[asset.kind] === seq;
+
+    let images: ReferenceImageItem[] = [];
+    try {
+      images = await Promise.all(
+        asset.photos
+          .filter((p) => p.url)
+          .map(async (p, i) => ({
+            dataUrl: await urlToDataUrl(p.url as string),
+            name: `${asset.name} ${i + 1}`,
+            size: p.size,
+            mimeType: p.mime,
+            storagePath: p.path,
+          }))
+      );
+    } catch {
+      if (!isLatest()) return;
+      setNotice({ message: 'Não foi possível carregar as fotos deste item. Abra a lista de novo e tente outra vez.' });
+      void memory.refreshAssets();
+      return;
+    }
+    if (!isLatest()) return;
+
+    if (asset.kind === 'product') handleApplyProductPreset(productFromData(asset.data));
+    else handleApplyCharacterPreset(characterFromData(asset.data));
+    setSessionAnalysis((prev) => ({ ...prev, [asset.kind]: undefined }));
+    setMediaState((prev) =>
+      asset.kind === 'product'
+        ? { ...prev, productImages: images, productImage: images[0] ?? null }
+        : { ...prev, characterImages: images, characterImage: images[0] ?? null }
+    );
+  };
+
+  // Visitante vai para a assinatura. Assinante cujas marcas ainda não carregaram (ou falharam) vê
+  // um aviso, em vez de um Kit com os padrões do app que "salvaria" sem salvar nada.
+  const openMemoryPanel = (open: (value: boolean) => void) => {
+    if (!memoryEnabled) {
+      setCheckoutPlan('annual');
+      return;
+    }
+    if (!memory.currentBrand) {
+      setNotice({ message: 'Suas marcas ainda não carregaram. Tente de novo em instantes.' });
+      if (memory.status === 'error') void memory.reload();
+      return;
+    }
+    open(true);
+  };
+
+  const handleTogglePin = (asset: MemoryAsset) => {
+    memory.setPinned(asset, !asset.pinned).catch((e) => {
+      if (e instanceof MemoryApiError && e.code === 'limit_reached') setLimitError(e);
+      else setNotice({ message: 'Não foi possível atualizar o item. Tente novamente.' });
     });
   };
 
-  // Clear all history
-  const handleClearAllHistory = () => {
-    setHistory([]);
-    try {
-      localStorage.removeItem(STORAGE_KEY_HISTORY);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleDeleteAsset = (asset: MemoryAsset) => {
+    memory.removeAsset(asset).catch(() => setNotice({ message: 'Não foi possível apagar o item. Tente novamente.' }));
   };
 
   const activeProduct = mode === 'video' ? videoState.product : imageState.product;
@@ -848,10 +986,11 @@ export default function App() {
 
       {/* Header */}
       <Header
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenSettings={() => openMemoryPanel(setIsSettingsOpen)}
+        onOpenHistory={() => openMemoryPanel(setIsHistoryOpen)}
+        memoryLocked={!memoryEnabled}
+        brandSlot={memoryEnabled ? <BrandSwitcher memory={memory} onLimit={setLimitError} /> : undefined}
         onOpenLanding={() => setCurrentView('landing')}
-        historyCount={history.length}
         hasAutoPreferences={preferences.autoApply}
         userEmail={session?.user?.email}
         onLogout={handleLogout}
@@ -929,6 +1068,23 @@ export default function App() {
               selectedAgent={videoState.agent}
               onAgentChange={handleAgentChange}
             />
+
+            {memoryEnabled && memory.currentBrand && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {(['product', 'character'] as const).map((kind) => (
+                  <AssetPicker
+                    key={kind}
+                    kind={kind}
+                    label={kind === 'product' ? 'Produto' : 'Criadora'}
+                    assets={memory.assets}
+                    onSelect={handleSelectAsset}
+                    onTogglePin={handleTogglePin}
+                    onDelete={handleDeleteAsset}
+                    onImagesExpired={() => void memory.refreshAssets()}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* 2. Reference Images Upload (Product & Character/Model) */}
             <ReferenceUploadSection
@@ -1025,6 +1181,7 @@ export default function App() {
 
       {/* Preferences Modal (Meus Padrões ⚙️) */}
       <PreferencesModal
+        key={memory.currentBrand ? `${memory.currentBrand.id}:${memory.currentBrand.updatedAt}` : 'sem-marca'}
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         preferences={preferences}
@@ -1032,15 +1189,16 @@ export default function App() {
         onApplyToCurrent={() => applyPreferencesToState(preferences)}
       />
 
-      {/* History Drawer */}
-      <HistoryDrawer
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        history={history}
-        onLoadItem={handleLoadHistoryItem}
-        onDeleteItem={handleDeleteHistoryItem}
-        onClearHistory={handleClearAllHistory}
-      />
+      {memoryEnabled && memory.currentBrand && (
+        <LibraryDrawer
+          key={memory.currentBrand.id}
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          brandId={memory.currentBrand.id}
+          brandName={memory.currentBrand.name}
+          onOpenPrompt={handleOpenLibraryPrompt}
+        />
+      )}
 
       {subscription.data && (
         <SubscriptionPortal
@@ -1051,6 +1209,9 @@ export default function App() {
           onChanged={subscription.refresh}
         />
       )}
+
+      <MemoryNotice notice={notice} onDismiss={dismissNotice} />
+      <MemoryLimitModal error={limitError} onClose={() => setLimitError(null)} />
 
       {/* Checkout / Subscription Modal */}
       <CheckoutModal

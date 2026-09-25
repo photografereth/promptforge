@@ -22,6 +22,7 @@ export interface ReferenceImageItem {
   name: string;
   size: number;
   mimeType: string;
+  storagePath?: string; // caminho no Storage quando a foto já está salva na memória da marca
 }
 
 export interface ReferenceMediaState {
