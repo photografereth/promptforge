@@ -27,6 +27,7 @@ import {
   ProductAnchor,
   CharacterAnchor,
   ReferenceMediaState,
+  ReferenceImageItem,
   VideoPromptState,
   ImagePromptState,
   UserPreferences,
@@ -47,8 +48,11 @@ import { useBrandMemory } from './hooks/useBrandMemory';
 import { BrandSwitcher } from './components/memory/BrandSwitcher';
 import { MemoryNotice, type Notice } from './components/memory/MemoryNotice';
 import { MemoryLimitModal } from './components/memory/MemoryLimitModal';
-import { MemoryApiError } from './lib/memoryApi';
+import { MemoryApiError, urlToDataUrl } from './lib/memoryApi';
 import { kitFromPreferences, preferencesFromKit } from './lib/memory/historyImport';
+import { AssetPicker } from './components/memory/AssetPicker';
+import { characterFromData, productFromData } from './lib/memory/assetForm';
+import type { MemoryAsset } from './lib/memory/types';
 
 const STORAGE_KEY_PREFS = 'flow_prompt_forge_prefs_v2';
 const STORAGE_KEY_HISTORY = 'flow_prompt_forge_history_v2';
@@ -160,6 +164,12 @@ export default function App() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const dismissNotice = useCallback(() => setNotice(null), []);
   const [limitError, setLimitError] = useState<MemoryApiError | null>(null);
+
+  // Análise da IA feita nesta sessão; vai junto quando o item é salvo com fotos novas.
+  const [sessionAnalysis, setSessionAnalysis] = useState<{
+    product?: Record<string, unknown>;
+    character?: Record<string, unknown>;
+  }>({});
   const [isConfirming, setIsConfirming] = useState<boolean>(
     () => window.location.pathname === '/subscription/confirm'
   );
@@ -438,6 +448,11 @@ export default function App() {
     scene: any;
     consistencySummary: string;
   }) => {
+    setSessionAnalysis({
+      product: result.product ? { ...result.product, consistencySummary: result.consistencySummary } : undefined,
+      character: result.character ? { ...result.character, consistencySummary: result.consistencySummary } : undefined,
+    });
+
     // 1. Update Product
     if (result.product) {
       setVideoState((prev) => ({
@@ -695,6 +710,7 @@ export default function App() {
     setIdea('');
     setEnhancedPrompt('');
     setErrorMessage(null);
+    setSessionAnalysis({});
 
     if (mode === 'video') {
       const resetVideo = {
@@ -750,6 +766,48 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Escolher um item salvo preenche a ficha e a galeria; nenhuma análise de IA é chamada.
+  const handleSelectAsset = async (asset: MemoryAsset) => {
+    if (asset.kind === 'product') handleApplyProductPreset(productFromData(asset.data));
+    else handleApplyCharacterPreset(characterFromData(asset.data));
+    setSessionAnalysis((prev) => ({ ...prev, [asset.kind]: undefined }));
+
+    let images: ReferenceImageItem[] = [];
+    try {
+      images = await Promise.all(
+        asset.photos
+          .filter((p) => p.url)
+          .map(async (p, i) => ({
+            dataUrl: await urlToDataUrl(p.url as string),
+            name: `${asset.name} ${i + 1}`,
+            size: p.size,
+            mimeType: p.mime,
+            storagePath: p.path,
+          }))
+      );
+    } catch {
+      setNotice({ message: 'Não foi possível carregar as fotos deste item. Abra a lista de novo e tente outra vez.' });
+      void memory.refreshAssets();
+      return;
+    }
+    setMediaState((prev) =>
+      asset.kind === 'product'
+        ? { ...prev, productImages: images, productImage: images[0] ?? null }
+        : { ...prev, characterImages: images, characterImage: images[0] ?? null }
+    );
+  };
+
+  const handleTogglePin = (asset: MemoryAsset) => {
+    memory.setPinned(asset, !asset.pinned).catch((e) => {
+      if (e instanceof MemoryApiError && e.code === 'limit_reached') setLimitError(e);
+      else setNotice({ message: 'Não foi possível atualizar o item. Tente novamente.' });
+    });
+  };
+
+  const handleDeleteAsset = (asset: MemoryAsset) => {
+    memory.removeAsset(asset).catch(() => setNotice({ message: 'Não foi possível apagar o item. Tente novamente.' }));
   };
 
   const activeProduct = mode === 'video' ? videoState.product : imageState.product;
@@ -932,6 +990,23 @@ export default function App() {
               selectedAgent={videoState.agent}
               onAgentChange={handleAgentChange}
             />
+
+            {memoryEnabled && memory.currentBrand && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {(['product', 'character'] as const).map((kind) => (
+                  <AssetPicker
+                    key={kind}
+                    kind={kind}
+                    label={kind === 'product' ? 'Produto' : 'Criadora'}
+                    assets={memory.assets}
+                    onSelect={handleSelectAsset}
+                    onTogglePin={handleTogglePin}
+                    onDelete={handleDeleteAsset}
+                    onImagesExpired={() => void memory.refreshAssets()}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* 2. Reference Images Upload (Product & Character/Model) */}
             <ReferenceUploadSection
